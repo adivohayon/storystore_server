@@ -22,6 +22,7 @@ plugins:
   - serverless-domain-manager
   - serverless-offline
   - serverless-webpack
+  - serverless-dotenv-plugin
 
 
 custom:

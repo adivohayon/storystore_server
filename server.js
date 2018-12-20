@@ -1,17 +1,16 @@
+import { Routes } from "./routes";
 const express = require("express");
 const sls = require("serverless-http");
 const app = express();
-import { getStore } from "./controllers/store.controller";
+
 // Test that serverless works
 app.get("/ping", (req, res) => {
 	res.send("pong");
 });
 
-app.get("/store/:id", getStore);
+// Setup all routes
+Routes(app);
 
-// module.exports.app = sls(app, {});
+// Export API for serverless
+export const api = sls(app, {});
 
-export const api =  sls(app, {});
-// export function app() {
-// 	return sls(app, {});
-// }

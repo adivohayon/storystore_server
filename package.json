@@ -1,0 +1,30 @@
+{
+  "name": "storystore",
+  "version": "0.0.1",
+  "description": "Storystore infrastructure",
+  "main": "index.js",
+  "scripts": {
+		"offline": "$(npm bin)/sls offline start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adivohayon/storystore_server.git"
+  },
+  "author": "Adiv Ohayon",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/adivohayon/storystore/issues"
+  },
+  "homepage": "https://github.com/adivohayon/storystore#readme",
+  "devDependencies": {
+    "serverless": "^1.35.1",
+    "serverless-domain-manager": "^2.6.9",
+    "serverless-dotenv-plugin": "^2.0.1",
+    "serverless-offline": "^3.31.3"
+  },
+  "dependencies": {
+    "express": "^4.16.4",
+    "serverless-http": "^1.8.0"
+  }
+}

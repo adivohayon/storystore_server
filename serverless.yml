@@ -1,0 +1,26 @@
+service: storystore_api
+package:
+  individually: true
+functions:
+  api:
+    handler: server.app
+    events:
+      - http:
+          path: /
+          method: ANY
+      - http:
+          path: /{proxy+}
+          method: ANY
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stage: dev
+  region: eu-central-1
+
+plugins:
+  - serverless-domain-manager
+  - serverless-offline
+
+
+custom:

@@ -4,7 +4,7 @@
   "description": "Storystore infrastructure",
   "main": "index.js",
   "scripts": {
-		"offline": "$(npm bin)/sls offline start",
+    "offline": "$(npm bin)/sls offline start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -18,13 +18,22 @@
   },
   "homepage": "https://github.com/adivohayon/storystore#readme",
   "devDependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.2.2",
+    "@babel/preset-env": "^7.2.3",
+    "babel-loader": "^8.0.4",
+    "babel-plugin-source-map-support": "^2.0.1",
     "serverless": "^1.35.1",
     "serverless-domain-manager": "^2.6.9",
     "serverless-dotenv-plugin": "^2.0.1",
-    "serverless-offline": "^3.31.3"
+    "serverless-offline": "^3.31.3",
+    "serverless-webpack": "^5.2.0",
+    "webpack": "^4.28.0",
+    "webpack-node-externals": "^1.7.2"
   },
   "dependencies": {
     "express": "^4.16.4",
-    "serverless-http": "^1.8.0"
+    "serverless-http": "^1.8.0",
+    "source-map-support": "^0.5.9"
   }
 }

@@ -1,9 +1,9 @@
-import { knex } from './../models/db';
+import { Stores } from './../models/store.model';
 
 // Get list of all stores
 export const getAllStores = async (req, res) => {
 	try {
-		const stores = await knex.select('store_name').from('stores');
+		const stores = await Stores.findAll();
 		res.json(stores);
 	} catch (err) {
 		console.error('err', err);
@@ -14,5 +14,12 @@ export const getAllStores = async (req, res) => {
 // Get Store info by storeId
 export const getStoreInfo = async (req, res) => {
 	const storeId = req.params.id;
-	res.send('storeInfo');
+	try {
+		const store = await Stores.find(storeId);
+		res.json(store);
+		
+	} catch (err) {
+		console.error('err', err);
+		res.status(404).end();
+	}
 };

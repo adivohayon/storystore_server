@@ -6,7 +6,7 @@ const database = process.env.DB_DATABASE;
 
 export const knex = require("knex")({
 	client: "pg",
-	debug: true,
+	// debug: true,
 	connection: {
 		host,
 		port,

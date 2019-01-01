@@ -13,10 +13,10 @@ export const Categories = {
 			.from('categories')
 			.where({ store_id: storeId, category_id: categoryId });
 	},
-	products: (storeId, categoryId) => {
+	shelves: (storeId, categoryId) => {
 		return knex
 			.select('name')
-			.from('products')
+			.from('shelves')
 			.where({ store_id: storeId, category_id: categoryId });
 	},
 };

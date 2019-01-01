@@ -1,11 +1,22 @@
 import {
 	createStoresTable,
 	seedStoresTable,
+} from './../models/seed/stores.seed.model';
+
+import {
 	createCategoriesTable,
 	seedCategoriesTable,
-	createProductsTable,
-	seedProductsTable,
-} from './../models/seed';
+} from './../models/seed/categories.seed.model';
+import {
+	createShelvesTable,
+	seedShelvesTable,
+} from './../models/seed/shelves.seed.model';
+import {
+	createSkusTable,
+	seedSkusTable,
+} from './../models/seed/skus.seed.model';
+
+
 
 export const seedDb = async (req, res, next) => {
 	try {
@@ -17,9 +28,17 @@ export const seedDb = async (req, res, next) => {
 		await createCategoriesTable();
 		await seedCategoriesTable();
 
-		// Products
-		await createProductsTable();
-		await seedProductsTable();
+		// Shelves
+		await createShelvesTable();
+		await seedShelvesTable();
+
+		// SKUs
+		await createSkusTable();
+		await seedSkusTable();
+
+		// SKU Content
+		// await createSkuContentTable();
+		// await seedSkuContentTable();
 
 		// Posts
 

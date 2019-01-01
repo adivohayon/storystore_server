@@ -1,5 +1,5 @@
 import { Categories } from './../models/categories.model';
-// Get list of all products in store
+// Get list of all shelfs in store
 export const getAllCategories = async (req, res) => {
 	const storeId = req.params.storeId;
 
@@ -12,7 +12,7 @@ export const getAllCategories = async (req, res) => {
 	}
 };
 
-// Get specific product in store
+// Get specific shelf in store
 export const getCategory = async (req, res) => {
 	const storeId = req.params.storeId;
 	const categoryId = req.params.categoryId;
@@ -26,14 +26,14 @@ export const getCategory = async (req, res) => {
 	}
 };
 
-// Get list of products in category, in store
-export const getProductsInCategory = async (req, res) => {
+// Get list of shelves in category, in store
+export const getShelvesInCategory = async (req, res) => {
 	const storeId = req.params.storeId;
 	const categoryId = req.params.categoryId;
 
 	try {
-		const products = await Categories.products(storeId, categoryId);
-		res.json(products);
+		const shelves = await Categories.shelves(storeId, categoryId);
+		res.json(shelves);
 	} catch (err) {
 		console.error('err', err);
 		res.status(404).end();

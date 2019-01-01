@@ -1,9 +1,9 @@
 import { getAllStores, getStoreInfo } from './controllers/store.controller';
-import { getAllProducts, getProduct } from './controllers/products.controller';
+import { getAllShelves, getShelf } from './controllers/shelves.controller';
 import {
 	getAllCategories,
 	getCategory,
-	getProductsInCategory,
+	getShelvesInCategory,
 } from './controllers/categories.controller';
 import { seedDb } from './controllers/db.controller';
 
@@ -16,11 +16,11 @@ export const Routes = app => {
 	// Get store info by storeId
 	app.get('/stores/:id', getStoreInfo);
 
-	// Get all products in a store
-	app.get('/stores/:storeId/products', getAllProducts);
+	// Get all shelves in a store
+	app.get('/stores/:storeId/shelves', getAllShelves);
 
-	// Get specific product in store
-	app.get('/stores/:storeId/products/:productId', getProduct);
+	// Get specific shelf in store
+	app.get('/stores/:storeId/shelves/:shelfId', getShelf);
 
 	// Get list of all categories in stores
 	app.get('/stores/:storeId/categories', getAllCategories);
@@ -28,10 +28,10 @@ export const Routes = app => {
 	// Get specific category in store
 	app.get('/stores/:storeId/categories/:categoryId', getCategory);
 
-	// Get list of products in store category
+	// Get list of shelves in store category
 	app.get(
-		'/stores/:storeId/categories/:categoryId/products',
-		getProductsInCategory
+		'/stores/:storeId/categories/:categoryId/shelves',
+		getShelvesInCategory
 	);
 
 	app.use((err, req, res, next) => {

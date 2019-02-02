@@ -1,13 +1,17 @@
-import { getAllStores, getStoreInfo } from './controllers/store.controller';
-import { getAllShelves, getShelf } from './controllers/shelves.controller';
 import {
 	getAllCategories,
 	getCategory,
 	getShelvesInCategory,
 } from './controllers/categories.controller';
 import { seedDb } from './controllers/db.controller';
+import { getAllShelves, getShelf } from './controllers/shelves.controller';
+import { getAllStores, getStoreInfo } from './controllers/store.controller';
 
 export const Routes = app => {
+	app.get('/test', (req, res) =>
+		res.json({ url: req.url, headers: req.headers })
+	);
+
 	app.get('/seed', seedDb);
 
 	// Get list of all stores

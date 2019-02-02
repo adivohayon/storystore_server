@@ -1,4 +1,4 @@
-service: storystore_api
+service: storystore-api
 package:
   individually: true
 functions:
@@ -15,20 +15,103 @@ functions:
 provider:
   name: aws
   runtime: nodejs8.10
-  stage: dev
-  region: eu-central-1
+  stage: prod
+  region: us-east-1
+  profile: storystore
+  timeout: 30
+  logRetentionInDays: 30
+  vpc:
+    securityGroupIds:
+      - Ref: LambdaExecutionSecurityGroup
+    subnetIds:
+      - Ref: AppSubnet1
+      - Ref: AppSubnet2
+      - Ref: AppSubnet3
+  environment:
+    DATABASE_URL:
+      Fn::Join:
+        - ''
+        - - 'pg://'
+          - ${self:custom.dbUsername}:${self:custom.dbPassword}
+          - '@'
+          - Fn::GetAtt: [RDSCluster, Endpoint.Address]
+          - ':'
+          - Fn::GetAtt: [RDSCluster, Endpoint.Port]
+          - '/'
+          - ${self:custom.dbName}
 
 plugins:
   - serverless-domain-manager
   - serverless-offline
   - serverless-webpack
   - serverless-dotenv-plugin
-
+  - serverless-vpc-plugin
+  - serverless-dependson-plugin
 
 custom:
+  dbUsername: storystore
+  dbPassword: vspPzraqM8xibv5k
+  dbName: storystore
   serverless-offline:
     port: 4000
+    dontPrintOutput: true
   webpack:
     webpackConfig: 'webpack.config.js'   # Name of webpack configuration file
     includeModules: true   # Node modules configuration for packaging
     packager: 'npm'   # Packager that will be used to package your external modules
+  vpcConfig:
+    cidrBlock: 10.0.0.0/16
+    useNatGateway: true
+    zones:
+      - us-east-1a
+      - us-east-1b
+      - us-east-1c
+    services:
+  customDomain:
+    domainName: api.storystore.co.il
+    basePath: ''
+    stage: ${self:provider.stage}
+    createRoute53Record: true
+    endpointType: regional
+
+resources:
+  Resources:
+    RDSSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: SecurityGroup for RDS
+        VpcId:
+          Ref: VPC
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 5432
+            ToPort: 5432
+            SourceSecurityGroupId:
+              Ref: LambdaExecutionSecurityGroup
+    RDSCluster:
+      Type: AWS::RDS::DBCluster
+      Properties:
+        Engine: aurora-postgresql
+        DBClusterParameterGroupName: default.aurora-postgresql9.6
+        MasterUsername: ${self:custom.dbUsername}
+        MasterUserPassword: ${self:custom.dbPassword}
+        DatabaseName: ${self:custom.dbName}
+        BackupRetentionPeriod: 30
+        PreferredBackupWindow: 01:00-02:00
+        PreferredMaintenanceWindow: mon:03:00-mon:04:00
+        DBSubnetGroupName:
+          Ref: RDSSubnetGroup
+        VpcSecurityGroupIds:
+          - 'Fn::GetAtt': RDSSecurityGroup.GroupId
+    DBInstance:
+      Type: AWS::RDS::DBInstance
+      Properties:
+        AllowMajorVersionUpgrade: false
+        AutoMinorVersionUpgrade: true
+        DBClusterIdentifier:
+          Ref: RDSCluster
+        DBInstanceClass: db.r4.large
+        DBParameterGroupName: default.aurora-postgresql9.6
+        DBSubnetGroupName:
+          Ref: RDSSubnetGroup
+        Engine: aurora-postgresql

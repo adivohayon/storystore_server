@@ -1,9 +1,6 @@
 import { knex } from './db';
-// var knexnest = require('knexnest');
-import knexnest from 'knexnest';
-const _groupBy = require('lodash.groupby');
 /*
-{	
+{
 	"shelfId": 1,
   "name": "Talya Dress",
   "price": "49.00",
@@ -12,7 +9,7 @@ const _groupBy = require('lodash.groupby');
 	"skus": [
 		{skuId: 1, skuAttributes: jsonparsed, content: [{type, value}] },
 		{skuId: 2, skuAttributes: jsonparsed },
-	],	
+	],
 }
 
 */
@@ -48,7 +45,7 @@ export const Shelves = {
 					// const skuContent = await knex.select('type', 'value').from('sku_content').where()
 					allShelves.push({ ...shelf, skus });
 				}
-				resolve (allShelves);
+				resolve(allShelves);
 			} catch (err) {
 				reject(err);
 			}

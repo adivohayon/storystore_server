@@ -1,43 +1,45 @@
 {
-  "name": "storystore",
-  "version": "0.0.1",
-  "description": "Storystore infrastructure",
-  "main": "index.js",
-  "scripts": {
-    "offline": "$(npm bin)/sls offline start",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/adivohayon/storystore_server.git"
-  },
-  "author": "Adiv Ohayon",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/adivohayon/storystore/issues"
-  },
-  "homepage": "https://github.com/adivohayon/storystore#readme",
-  "devDependencies": {
-    "@babel/cli": "^7.2.3",
-    "@babel/core": "^7.2.2",
-    "@babel/preset-env": "^7.2.3",
-    "babel-loader": "^8.0.4",
-    "babel-plugin-source-map-support": "^2.0.1",
-    "serverless": "^1.35.1",
-    "serverless-domain-manager": "^2.6.9",
-    "serverless-dotenv-plugin": "^2.0.1",
-    "serverless-offline": "^3.31.3",
-    "serverless-webpack": "^5.2.0",
-    "webpack": "^4.28.0",
-    "webpack-node-externals": "^1.7.2"
-  },
-  "dependencies": {
-    "express": "^4.16.4",
-    "knex": "^0.16.3",
-    "knexnest": "^1.0.0",
-    "lodash.groupby": "^4.6.0",
-    "pg": "^7.7.1",
-    "serverless-http": "^1.8.0",
-    "source-map-support": "^0.5.9"
-  }
+	"name": "storystore",
+	"version": "0.0.1",
+	"description": "Storystore infrastructure",
+	"main": "index.js",
+	"scripts": {
+		"offline": "$(npm bin)/sls offline start",
+		"deploy": "NODE_ENV=production $(npm bin)/sls deploy",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/adivohayon/storystore_server.git"
+	},
+	"author": "Adiv Ohayon",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/adivohayon/storystore/issues"
+	},
+	"homepage": "https://github.com/adivohayon/storystore#readme",
+	"devDependencies": {
+		"@babel/cli": "^7.2.3",
+		"@babel/core": "^7.2.2",
+		"@babel/preset-env": "^7.2.3",
+		"babel-loader": "^8.0.4",
+		"babel-plugin-source-map-support": "^2.0.1",
+		"mysql2": "^1.6.4",
+		"serverless": "^1.35.1",
+		"serverless-dependson-plugin": "^1.1.2",
+		"serverless-domain-manager": "^2.6.9",
+		"serverless-dotenv-plugin": "^2.0.1",
+		"serverless-offline": "^3.31.3",
+		"serverless-vpc-plugin": "^0.1.9",
+		"serverless-webpack": "^5.2.0",
+		"webpack": "^4.28.0",
+		"webpack-node-externals": "^1.7.2"
+	},
+	"dependencies": {
+		"express": "^4.16.4",
+		"knex": "^0.16.3",
+		"pg": "^7.7.1",
+		"serverless-http": "^1.8.0",
+		"source-map-support": "^0.5.9"
+	}
 }

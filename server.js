@@ -13,4 +13,4 @@ app.get('/ping', (req, res) => {
 Routes(app);
 
 // Export API for serverless
-export const api = sls(app, {});
+export const api = sls(app, { callbackWaitsForEmptyEventLoop: false });

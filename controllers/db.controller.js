@@ -12,9 +12,9 @@ import {
 	seedShelvesTable,
 } from './../models/seed/shelves.seed.model';
 import {
-	createSkusTable,
-	seedSkusTable,
-} from './../models/seed/skus.seed.model';
+	createVariationsTable,
+	seedVariationsTable,
+} from './../models/seed/variations.seed.model';
 
 
 
@@ -33,8 +33,8 @@ export const seedDb = async (req, res, next) => {
 		await seedShelvesTable();
 
 		// SKUs
-		await createSkusTable();
-		await seedSkusTable();
+		await createVariationsTable();
+		await seedVariationsTable();
 
 		// SKU Content
 		// await createSkuContentTable();

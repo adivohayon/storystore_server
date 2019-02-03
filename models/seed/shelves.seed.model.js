@@ -12,6 +12,8 @@ export const createShelvesTable = async () => {
 		table.decimal('price', 5);
 		table.string('currency', 2);
 		table.string('slug');
+		table.text('sale');
+		table.text('description');
 
 		table.integer('store_id').notNullable();
 		table.integer('category_id').notNullable();
@@ -36,9 +38,39 @@ export const createShelvesTable = async () => {
 };
 
 export const seedShelvesTable = async () => {
+	const shelfSale = {
+		saleText: 'מבצע קני היום 1+1 !',
+		saleComment: 'ההנחה תתעדכן בסל הקניות',
+	};
 	const shelves = [
-		{ name: 'Talya Dress', price: 49, currency: '$', slug: 'talya-dress', store_id: 1, category_id: 1 },
-		{ name: 'Cool shirt', price: 29, currency: '$', slug: 'cool-shirt', store_id: 1, category_id: 2 },
+		{
+			name: 'Talya Dress',
+			price: 49,
+			currency: '$',
+			slug: 'talya-dress',
+			store_id: 1,
+			category_id: 1,
+			description: `שמלת פולו
+				שמלת פולו מדוייקת לחורף של ישראל, מעוצבת בסגנון המחויט ששם אותך בדיוק  במראה האלגנטי
+
+				שלא מתאמץ. תוספות הצווארון, השרוול והתחתית מעניקים מראה מתוחכם ומעניין שיכול להתאים
+				
+				לכל זמן ולכל יציאה. עם סניקרס למראה סטרייט סטייל מגניב או ליציאה עם עקב למראה אצילי.
+				
+				השמלה תפורה מבד סריג וופל נעים ורך מאוד.
+				
+				קיימת בצבע כחול ובורדו.
+		`,
+			sale: JSON.stringify(shelfSale),
+		},
+		{
+			name: 'Cool shirt',
+			price: 29,
+			currency: '$',
+			slug: 'cool-shirt',
+			store_id: 1,
+			category_id: 2,
+		},
 	];
 	return knex.batchInsert('shelves', shelves);
 };

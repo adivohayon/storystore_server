@@ -1,3 +1,5 @@
+import { getAllStores, getStore } from './controllers/store.controller';
+import { getAllShelves, getShelf } from './controllers/shelves.controller';
 import {
 	getAllCategories,
 	getCategory,
@@ -18,7 +20,8 @@ export const Routes = app => {
 	app.get('/stores', getAllStores);
 
 	// Get store info by storeId
-	app.get('/stores/:id', getStoreInfo);
+	// app.get('/stores/:id', getStoreInfo);
+	app.get('/stores/:slug', getStore);
 
 	// Get all shelves in a store
 	app.get('/stores/:storeId/shelves', getAllShelves);

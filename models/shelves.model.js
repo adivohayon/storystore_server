@@ -6,7 +6,7 @@ import { knex } from './db';
   "price": "49.00",
   "currency": "$",
 	"slug": "talya-dress",
-	"skus": [
+	"variations": [
 		{skuId: 1, skuAttributes: jsonparsed, content: [{type, value}] },
 		{skuId: 2, skuAttributes: jsonparsed },
 	],
@@ -23,27 +23,34 @@ export const Shelves = {
 						'shelves.name',
 						'shelves.price',
 						'shelves.currency',
-						'shelves.slug'
+						'shelves.slug',
+						'shelves.description',
+						'shelves.sale',
 					)
 					.from('shelves')
 					.where({ store_id: storeId });
 
 				const allShelves = [];
 				for (const shelf of shelves) {
-					const skus = await knex
-						.select('attributes', 'skus.sku_id AS skuId', 'content')
-						.from('skus')
+					const variations = await knex
+						.select(
+							'variations.variation_id AS variationId',
+							'sku',
+							'attributes',
+							'content'
+						)
+						.from('variations')
 						.where({ shelf_id: shelf.shelfId })
-						.map(sku => {
+						.map(variation => {
 							return {
-								skuId: sku.skuId,
-								attributes: JSON.parse(sku.attributes),
-								content: JSON.parse(sku.content),
+								variationId: variation.variationId,
+								sku: variation.sku,
+								attributes: JSON.parse(variation.attributes),
+								content: JSON.parse(variation.content),
 							};
 						});
 
-					// const skuContent = await knex.select('type', 'value').from('sku_content').where()
-					allShelves.push({ ...shelf, skus });
+					allShelves.push({ ...shelf, variations });
 				}
 				resolve(allShelves);
 			} catch (err) {
@@ -67,21 +74,25 @@ export const Shelves = {
 					.where({ store_id: storeId, 'shelves.shelf_id': shelfId })
 					.then(rows => rows[0]);
 
-				const skus = await knex
-					.select('attributes', 'skus.sku_id AS skuId', 'content')
-					.from('skus')
+				const variations = await knex
+					.select(
+						'variations.variation_id AS variationId',
+						'sku',
+						'attributes',
+						'content'
+					)
+					.from('variations')
 					.where({ shelf_id: shelfId })
-					.map(sku => {
+					.map(variation => {
 						return {
-							skuId: sku.skuId,
-							attributes: JSON.parse(sku.attributes),
-							content: JSON.parse(sku.content),
+							variationId: variation.variationId,
+							sku: variation.sku,
+							attributes: JSON.parse(variation.attributes),
+							content: JSON.parse(variation.content),
 						};
 					});
 
-				// const skuContent = await knex.select('type', 'value').from('sku_content').where()
-
-				const fullShelf = { ...shelf, skus };
+				const fullShelf = { ...shelf, variations };
 				console.log('fullShelf', fullShelf);
 
 				resolve(fullShelf);

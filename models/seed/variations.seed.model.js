@@ -1,22 +1,22 @@
 /*******************************
- *******  	  SKUS	 	 *******
+ *******  	  VARIATIONS	 	 *******
  *******************************/
-import { knex } from './../db';
-import { dropTableIfExists } from './../../helpers/db.helper';
+import { knex } from '../db';
+import { dropTableIfExists } from '../../helpers/db.helper';
 /*
 	sku: 'TLDSAD',
 	attributes: {
 		color: {label: 'שחור', value: '#000000'},
 		size: {label: 'בינוני', value: 'M' }
 	}
-	color: { label: 'black', value: '#000000' },
-				size: 'S',
+	content: 
 */
-export const createSkusTable = async () => {
-	const dropTable = dropTableIfExists(knex, 'skus');
-	const createTable = knex.schema.createTable('skus', table => {
-		table.increments('sku_id').unique(); // id
-		table.string('attributes'); // type (size, color)
+export const createVariationsTable = async () => {
+	const dropTable = dropTableIfExists(knex, 'variations');
+	const createTable = knex.schema.createTable('variations', table => {
+		table.increments('variation_id').unique(); // id
+		table.string('sku');
+		table.text('attributes'); // type (size, color)
 		table.text('content');
 
 		table.timestamps(null, true);
@@ -33,7 +33,7 @@ export const createSkusTable = async () => {
 	return Promise.all([dropTable, createTable]);
 };
 
-export const seedSkusTable = async () => {
+export const seedVariationsTable = async () => {
 	const attributes = [
 		{
 			color: { label: 'שחור', value: '#000000' },
@@ -44,11 +44,11 @@ export const seedSkusTable = async () => {
 			size: { label: 'גדול', value: 'L' },
 		},
 		{
-			color: { label: 'חרדל', value: '#000000' },
+			color: { label: 'חרדל', value: '#B99557' },
 			size: { label: 'בינוני', value: 'M' },
 		},
 		{
-			color: { label: 'חרדל', value: '#000000' },
+			color: { label: 'חרדל', value: '#B99557' },
 			size: { label: 'גדול', value: 'L' },
 		},
 	];
@@ -65,11 +65,11 @@ export const seedSkusTable = async () => {
 		},
 	];
 
-	const skus = [
-		{ attributes: JSON.stringify(attributes[0]), shelf_id: 1, content: JSON.stringify(content) },
-		{ attributes: JSON.stringify(attributes[1]), shelf_id: 1, content: JSON.stringify(content) },
-		{ attributes: JSON.stringify(attributes[2]), shelf_id: 1, content: JSON.stringify(content) },
-		{ attributes: JSON.stringify(attributes[3]), shelf_id: 2, content: JSON.stringify(content) },
+	const variations = [
+		{ sku: 'ABCD', attributes: JSON.stringify(attributes[0]), shelf_id: 1, content: JSON.stringify(content) },
+		{ sku: 'EFGH', attributes: JSON.stringify(attributes[1]), shelf_id: 1, content: JSON.stringify(content) },
+		{ sku: 'IJKL', attributes: JSON.stringify(attributes[2]), shelf_id: 1, content: JSON.stringify(content) },
+		{ sku: 'MNOP', attributes: JSON.stringify(attributes[3]), shelf_id: 2, content: JSON.stringify(content) },
 	];
-	return knex.batchInsert('skus', skus);
+	return knex.batchInsert('variations', variations);
 };

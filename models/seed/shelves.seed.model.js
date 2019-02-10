@@ -8,15 +8,17 @@ export const createShelvesTable = async () => {
 	const dropTable = dropTableIfExists(knex, 'shelves');
 	const createTable = knex.schema.createTable('shelves', table => {
 		table.increments('shelf_id').unique(); // id
+		table.integer('order');
 		table.string('slug').unique();
-		//table.string('name'); // name
-		//table.string('currency', 2);
-		table.text('sale');
-		table.text('description');
-		table.decimal('price', 5);
+		table.string('name'); // name
+		table.string('short_description');
+		table.text('info');
+		
+		// table.text('sale');
+		// table.decimal('price', 5);
 
 		table.integer('store_id').notNullable();
-		table.integer('category_id').notNullable();
+		// table.integer('category_id').notNullable();
 
 		table.timestamps(null, true);
 

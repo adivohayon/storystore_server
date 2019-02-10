@@ -46,6 +46,8 @@ export const assetsByDirectory = storeSlug => {
 
 export const assetsByVariationId = (assets, variationId) => {
 	if (assets && assets.length && variationId) {
+
+
 		return assets.filter(asset => {
 			return asset.split('_')[2] == variationId;
 		});

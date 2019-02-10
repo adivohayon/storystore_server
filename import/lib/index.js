@@ -30,13 +30,15 @@ export const csvToJson = (storeSlug, filename) => {
 	return csv().fromFile(csvFile);
 };
 
-
-export const getShelvesAndVariations = jsonArr => {
+export const getShelvesAndVariations = (jsonArr, storeId) => {
 	const allShelves = [];
 	const allVariations = [];
 
 	jsonArr.forEach(row => {
 		if (row.shelf) {
+			row.shelf.shelf_id = +row.shelf.shelf_id;
+			row.shelf.order = +row.shelf.order;
+			row.shelf.store_id = storeId;
 			allShelves.push(row.shelf);
 		}
 		if (row.variation) {
@@ -48,7 +50,6 @@ export const getShelvesAndVariations = jsonArr => {
 
 	return { shelves: uniqueShelves, variations: allVariations };
 };
-
 
 export const shelfIdToShelfSlugMap = shelves => {
 	const idSlugMap = {};

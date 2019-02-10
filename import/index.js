@@ -6,7 +6,7 @@ import {
 } from './lib';
 
 import { injectAssets } from './lib/assets';
-
+import {insertShelves, insertVariations} from './lib/db'
 const getStore = () => {
 	return {
 		storeId: 2,
@@ -39,9 +39,13 @@ const start = async () => {
 		let saveFileResp = '';
 		saveFileResp = await saveToJson(shelves, store.slug, 'shelves');
 		console.log('***', saveFileResp);
-		saveFileResp = await saveToJson(variations, store.slug, 'variations');
-		console.log('***', saveFileResp);
+		// saveFileResp = await saveToJson(variations, store.slug, 'variations');
+		// console.log('***', saveFileResp);
 		
+		// Batch insert to DB
+		let dbInsertResp = '';
+		dbInsertResp = await insertShelves(shelves, false);
+		console.log('###', dbInsertResp);
 
 		console.log(`${shelves.length} shelves processed`);
 		console.log(`${variations.length} variations processed`);

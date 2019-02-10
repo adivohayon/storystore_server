@@ -16,7 +16,13 @@ export const createVariationsTable = async () => {
 	const createTable = knex.schema.createTable('variations', table => {
 		table.increments('variation_id').unique(); // id
 		table.string('sku');
+		table.integer('quantity');
 		table.text('attributes'); // type (size, color)
+
+		table.decimal('price', 5);
+		table.decimal('sale_price', 5);
+		table.string('currency');
+
 		table.text('content');
 
 		table.timestamps(null, true);

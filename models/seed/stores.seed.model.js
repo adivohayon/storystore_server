@@ -11,8 +11,22 @@ export const createStoresTable = async () => {
 		table.increments('store_id').unique();
 		table.string('slug').unique();
 		table.string('name');
+		table.string('tagline');
+		table.text('about');
+		
+		table.string('address');
+		table.string('email');
+		table.string('phone');
+		table.string('opening_hours');
+		table.text('customer_service');
+
+		table.text('terms_general');
 		table.text('shipping_details');
 		table.text('returns_policy');
+		table.text('warranty');
+		table.text('privacy_policy');
+
+
 		table.timestamps(null, true);
 	});
 

@@ -79,3 +79,5 @@ dist
 .DS_Store
 
 .webpack
+
+import/stores/*

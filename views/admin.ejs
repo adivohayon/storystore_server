@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>StoryStore</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<script>
+			$(function(){
+				$(document).on('change', 'input[type="file"]', function(){
+					const reader = new FileReader();
+					reader.onload = function(e) {
+						$('textarea[name="csv"]').val(e.target.result);
+					}
+					reader.readAsText(this.files[0]);
+				})
+
+			});
+		</script>
+	</head>
+	<body>
+	<div>
+	<table border="1">
+	<thead>
+		<tr>
+			<th>ID</th>
+			<th>Slug</th>
+			<th>Name</th>
+		</tr>
+	</thead>
+	<tbody>
+	<% for (const store of stores) { %>
+		<tr>
+			<td><%=store.id%></td>
+			<td><%=store.slug%></td>
+			<td><%=store.name%></td>
+		</tr>
+	<% } %>
+	</tbody>
+	</table>
+	<hr>
+	</div>
+		<div>
+			<form method="POST" action="/admin/create">
+				<input name="slug" placeholder="slug" />
+				<input name="name" placeholder="name" />
+				<input type="submit" value="Create" />
+			</form>
+		</div>
+		<div>
+			<form method="POST" action="/admin/import">
+				<input type="file" />
+				<textarea name="csv"></textarea>
+				<select name="store">
+				<% for (const store of stores) { %>
+				<option value="<%=store.slug%>"><%=store.name%></option>
+				<% } %>
+				</select>
+				<input type="submit" value="Upload" />
+			</form>
+		</div>
+	</body>
+</html>

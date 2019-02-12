@@ -60,6 +60,9 @@
 			<hr />
 		</div>
 		<div>
+		<h3><a href="/admin/db">Database</a></h3>
+		</div>
+		<div>
 			<h1>IMPORT</h1>
 			<form method="POST" action="/admin/create-store">
 				<div class="form-group">
@@ -95,7 +98,7 @@
 		<div>
 			<form method="POST" action="/admin/import">
 				<div class="form-group">
-					<h2>Shelves & Variations CSV</h2>
+					<h2>Shelves & Variations CSV (Import)</h2>
 					<input type="file" />
 					<textarea name="csv"></textarea>
 					Store Name
@@ -111,5 +114,22 @@
 				<!-- <input type="checkbox" id="uploadAssets" name="uploadAssets" checked /> Upload Assets to S3 -->
 			</form>
 		</div>
+		<div>
+		<form method="POST" action="/admin/export">
+			<div class="form-group">
+				<h2>Shelves & Variations CSV (Export)</h2>
+				Store Name
+				<select name="store">
+					<% for (const store of stores) { %>
+					<option value="<%=store.slug%>"><%=store.name%></option>
+					<% } %>
+				</select>
+			</div>
+			<div class="form-group">
+				<input type="submit" value="Export" />
+			</div>
+			<!-- <input type="checkbox" id="uploadAssets" name="uploadAssets" checked /> Upload Assets to S3 -->
+		</form>
+	</div>
 	</body>
 </html>

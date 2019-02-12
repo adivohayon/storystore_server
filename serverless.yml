@@ -1,6 +1,11 @@
 service: storystore-api
 package:
   individually: true
+  exclude:
+  - .git/**
+  - .vscode/**
+  - .env.development
+
 functions:
   api:
     handler: handler.api

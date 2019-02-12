@@ -15,6 +15,8 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 	});
 
 	app.post('/:store', async (req, res) => {
+		console.log('address', req.body.address);
+		console.log('personal', req.body.personal);
 		const quantities = req.body.items.reduce(
 			(o, { id, qty }) => Object.assign(o, { [String(id)]: Number(qty) || 1 }),
 			{}
@@ -112,6 +114,15 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 	app.all('/:store/ipn/:order', async (req, res) => {
 		const order = await Order.findOne({ where: { id: +req.params.order } });
 		if (!order) return res.status(404).end();
+		if (order.status){
+			console.warn(`duplicate callback for order ${order.id}`);
+			return res.status(400).end();
+		}
+		if (+req.query.error)
+		{
+			await order.update({ response: req.body, status: 'ERROR' });
+			return res.json({});
+		}
 		await order.update({ response: req.body });
 		const { token: GroupPrivateToken, test } = req.store.payment || {};
 		const {

@@ -16,7 +16,7 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 	});
 
 	app.get('/sync', async (req, res) => {
-		await sequelize.sync();
+		await sequelize.sync({ alter: !!+req.query.alter });
 		res.json({ ok: true });
 	});
 

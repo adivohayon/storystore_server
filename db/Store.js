@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = (sequelize, Sequelize) => {
-	let model = sequelize.define(
+	const model = sequelize.define(
 		'Store',
 		{
 			slug: {
@@ -14,13 +14,14 @@ module.exports = (sequelize, Sequelize) => {
 			tagline: Sequelize.STRING,
 			about: Sequelize.TEXT,
 			info: Sequelize.JSON,
-
 			shipping_details: Sequelize.TEXT,
+			payment: Sequelize.JSON,
 		},
 		{}
 	);
 
-	model.associate = function({ Shelf }) {
+	model.associate = function({ Shelf, Order }) {
 		this.hasMany(Shelf, { as: 'shelves' });
+		this.hasMany(Order, { as: 'orders' });
 	};
 };

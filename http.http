@@ -1,6 +1,21 @@
 
 
 
+# payment
+POST http://localhost:4000/order/kookint
+Content-Type: application/json
+Referer: http://localhost:4000/
+
+{
+  "personal": {"firstName": "Gilad", "lastName": "Novik", "email": "gilad@novik.ca", "phone": "0505551234"},
+  "address": {"street": "אלנבי 45","city": "תל אביב","zipcode": "123456","pob": "444"},
+    "items": [
+        {"id": 170, "qty": 1},
+        {"id": 171, "qty": 2},
+        {"id": 172, "qty": 5}
+    ]
+}
+
 # real payment
 POST https://testicredit.rivhit.co.il/API/PaymentPageRequest.svc/GetUrl
 Content-Type: application/json
@@ -12,20 +27,8 @@ Content-Type: application/json
   "Items": [
     {
       "Quantity": 1,
-      "UnitPrice": 10,
+      "UnitPrice": 1,
       "Description": "Item Test"
     }
-    ]
-}
-
-
-
-# payment
-POST http://localhost:4000/payment
-Content-Type: application/json
-
-{
-    "items": [
-        {"qty": 1, "price": 14.99, "description": "test item"}
     ]
 }

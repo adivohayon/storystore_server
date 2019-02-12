@@ -2,10 +2,9 @@
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
+const Sequelize = require('sequelize');
 const require_all = require('require-all');
 const sequelize = require('./db');
-
-const __DEV__ = process.env.NODE_ENV == 'development';
 
 for (let fn of require('methods').concat('use', 'all')) {
 	let orig = express.Router[fn];
@@ -25,7 +24,7 @@ for (let fn of require('methods').concat('use', 'all')) {
 const app = (module.exports = express());
 app.set('view engine', 'ejs');
 app.set('views', path.resolve(__dirname, './views'));
-app.set('db', { ...sequelize.models, sequelize });
+app.set('db', { ...sequelize.models, sequelize, Sequelize });
 
 app.use(
 	require('cookie-session')({

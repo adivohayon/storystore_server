@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = (sequelize, Sequelize) => {
-	let model = sequelize.define(
+	const model = sequelize.define(
 		'Shelf',
 		{
 			slug: { type: Sequelize.STRING, allowNull: false, required: true },

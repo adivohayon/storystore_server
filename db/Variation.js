@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = (sequelize, Sequelize) => {
-	let model = sequelize.define(
+	const model = sequelize.define(
 		'Variation',
 		{
 			slug: { type: Sequelize.STRING, allowNull: false },

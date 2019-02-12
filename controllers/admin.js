@@ -20,17 +20,31 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 		res.json({ ok: true });
 	});
 
-	app.post('/create', async (req, res) => {
+	app.post('/create-store', async (req, res) => {
+		const info = {
+			address: req.body.store_info_address,
+			email: req.body.store_info_email,
+			phone: req.body.store_info_phone,
+			openingHours: req.body['store_info_opening-hours'],
+		};
 		await Store.create({
-			slug: req.body.slug,
-			name: req.body.name || req.body.slug,
+			slug: req.body.store_slug,
+			name: req.body.store_name || req.body.store_slug,
+			tagline: req.body.store_tagline,
+			about: req.body.store_about,
+			info,
+			shipping_details: req.body.shipping_details,
 		});
 		res.redirect('/admin');
 	});
 
 	app.post('/import', async (req, res) => {
 		const store = await Store.findOne({ where: { slug: req.body.store } });
+		// const uploadAssets = req.body.uploadAssets;
+
 		if (!store) return res.json({ error: 'missing store id' });
+		// console.log('uploadAssets', uploadAssets);
+		// if (uploadAssets) {
 		let keys = [];
 		for (let ContinuationToken; ; ) {
 			const {
@@ -48,6 +62,7 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 			if (!IsTruncated) break;
 			ContinuationToken = NextContinuationToken;
 		}
+		// }
 		await sequelize.sync();
 		await Shelf.destroy({ where: { StoreId: store.id } });
 		await Variation.destroy({ where: { ShelfId: null } });
@@ -60,6 +75,7 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 			{}
 		);
 
+		console.log('shelves', shelves);
 		for (const {
 			slug,
 			name,

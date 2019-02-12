@@ -4,57 +4,111 @@
 		<title>StoryStore</title>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 		<script>
-			$(function(){
-				$(document).on('change', 'input[type="file"]', function(){
+			$(function() {
+				$(document).on('change', 'input[type="file"]', function() {
 					const reader = new FileReader();
 					reader.onload = function(e) {
 						$('textarea[name="csv"]').val(e.target.result);
-					}
+					};
 					reader.readAsText(this.files[0]);
-				})
-
+				});
 			});
 		</script>
+		<style>
+			body {
+				font-size: 18px;
+			}
+			.form-group {
+				display: flex;
+				flex-direction: column;
+				border-bottom: 2px solid black;
+				padding: 1rem;
+			}
+			.form-group > * {
+				margin-bottom: 1rem;
+			}
+		</style>
 	</head>
 	<body>
-	<div>
-	<table border="1">
-	<thead>
-		<tr>
-			<th>ID</th>
-			<th>Slug</th>
-			<th>Name</th>
-		</tr>
-	</thead>
-	<tbody>
-	<% for (const store of stores) { %>
-		<tr>
-			<td><%=store.id%></td>
-			<td><%=store.slug%></td>
-			<td><%=store.name%></td>
-		</tr>
-	<% } %>
-	</tbody>
-	</table>
-	<hr>
-	</div>
 		<div>
-			<form method="POST" action="/admin/create">
-				<input name="slug" placeholder="slug" />
-				<input name="name" placeholder="name" />
-				<input type="submit" value="Create" />
+			<table border="1">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Slug</th>
+						<th>Name</th>
+						<th>Tagline</th>
+						<th>About</th>
+						<th>Info</th>
+						<th>Shipping Details</th>
+					</tr>
+				</thead>
+				<tbody>
+					<% for (const store of stores) { %>
+					<tr>
+						<td><%=store.id%></td>
+						<td><%=store.slug%></td>
+						<td><%=store.name%></td>
+						<td><%=store.tagline%></td>
+						<td><%=store.about%></td>
+						<td><%- JSON.stringify(store.info) %></td>
+						<td><%=store.shipping_details%></td>
+					</tr>
+					<% } %>
+				</tbody>
+			</table>
+			<hr />
+		</div>
+		<div>
+			<h1>IMPORT</h1>
+			<form method="POST" action="/admin/create-store">
+				<div class="form-group">
+					<h2>Store</h2>
+					<h4>Basic Info</h6>
+					<input name="store_slug" placeholder="Slug" />
+					<input name="store_name" placeholder="Name" />
+					<input name="store_tagline" placeholder="Tagline" />
+				</div>
+				<div class="form-group">
+					<h4>Info</h4>
+					<input name="store_info_address" placeholder="Address" />
+					<input name="store_info_email" placeholder="Email" />
+					<input name="store_info_phone" placeholder="Phone" />
+					<textarea
+						name="store_info_opening-hours"
+						placeholder="Opening Hours"
+					></textarea>
+				</div>
+				<div class="form-group">
+					<h4>Additional Info</h4>
+					<textarea name="store_about" placeholder="About"></textarea>
+					<textarea
+						name="shipping_details"
+						placeholder="Shipping Details"
+					></textarea>
+				</div>
+				<div class="form-group">
+					<input type="submit" value="Create" />
+				</div>
 			</form>
 		</div>
 		<div>
 			<form method="POST" action="/admin/import">
-				<input type="file" />
-				<textarea name="csv"></textarea>
-				<select name="store">
-				<% for (const store of stores) { %>
-				<option value="<%=store.slug%>"><%=store.name%></option>
-				<% } %>
-				</select>
-				<input type="submit" value="Upload" />
+				<div class="form-group">
+					<h2>Shelves & Variations CSV</h2>
+					<input type="file" />
+					<textarea name="csv"></textarea>
+					Store Name
+					<select name="store">
+						<% for (const store of stores) { %>
+						<option value="<%=store.slug%>"><%=store.name%></option>
+						<% } %>
+					</select>
+				</div>
+				<div class="form-group">
+					<input type="submit" value="Upload" />
+				</div>
+				<!-- <input type="checkbox" id="uploadAssets" name="uploadAssets" checked /> Upload Assets to S3 -->
 			</form>
 		</div>
 	</body>

@@ -60,12 +60,12 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 				RedirectURL: String(new URL('/?order=success', req.headers.referer)),
 				FailRedirectURL: String(new URL('/?order=error', req.headers.referer)),
 
-				IPNURL: `https://forsit.serveo.net/order/${req.store.slug}/ipn/${
-					order.id
-				}`,
-				IPNFailureURL: `https://forsit.serveo.net/order/${req.store.slug}/ipn/${
-					order.id
-				}?error=1`,
+				IPNURL: `https://${__DEV__ ? process.env.SERVEO : req.hostname}/order/${
+					req.store.slug
+				}/ipn/${order.id}`,
+				IPNFailureURL: `https://${
+					__DEV__ ? process.env.SERVEO : req.hostname
+				}/order/${req.store.slug}/ipn/${order.id}?error=1`,
 
 				CustomerFirstName: _.get(order, 'personal.firstName', 'unknown'),
 				CustomerLastName: _.get(order, 'personal.lastName', 'unknown'),

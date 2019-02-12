@@ -81,3 +81,5 @@ dist
 .webpack
 
 import/stores/*
+
+.env.devleopment

@@ -11,6 +11,13 @@ module.exports = (sequelize, Sequelize) => {
 				type: Sequelize.DECIMAL(19, 4),
 				required: true,
 				allowNull: false,
+				get() {
+					const price = this.getDataValue('price');
+
+					return Math.floor(parseFloat(price));
+					// return this.getDataValue('price').toFixed(2);
+					// return prc;
+				}
 			},
 			sale_price: Sequelize.DECIMAL(19, 4),
 			currency: { type: Sequelize.CHAR(3), defaultValue: 'ILS' },

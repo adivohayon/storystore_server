@@ -5,7 +5,8 @@ module.exports = (sequelize, Sequelize) => {
 		'Order',
 		{
 			status: {
-				type: Sequelize.ENUM('PENDING', 'ERROR', 'SUCCESS'),
+				// type: Sequelize.ENUM('PENDING', 'ERROR', 'SUCCESS'),
+				type: Sequelize.STRING,
 			},
 			personal: Sequelize.JSON,
 			address: Sequelize.JSON,

@@ -6,8 +6,8 @@ Add the following into "payment" field:
 
 ```
 {
-	"test": true,
-	"token": "08d7c3d5-fb0b-486e-8705-2ec2cd3479ca"
+	"test": true, 
+	"token": "f7658748-12a7-4fcd-90dd-95428eadb2fe"
 }
 ```
 

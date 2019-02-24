@@ -41,6 +41,8 @@
 						<th>About</th>
 						<th>Info</th>
 						<th>Shipping Details</th>
+						<th>Returns</th>
+						<th>Payments Provider</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -53,6 +55,8 @@
 						<td><%=store.about%></td>
 						<td><%- JSON.stringify(store.info) %></td>
 						<td><%=store.shipping_details%></td>
+						<td><%=store.returns%></td>
+						<td><%=store.payment%></td>
 					</tr>
 					<% } %>
 				</tbody>
@@ -89,6 +93,25 @@
 						name="shipping_details"
 						placeholder="Shipping Details"
 					></textarea>
+					<textarea
+						name="returns"
+						placeholder="Returns"
+					></textarea>
+				</div>
+				<div class="form-group">
+					<h4>Payment Info</h4>
+					<select name="payment_provider">
+						<option value="yaadpay">Yaad Pay</option>
+						<option value="i-credit">iCredit</option>
+					</select>
+					<input name="payment_account_id" placeholder="Payment provider account ID (e.g. token, masof)" />
+					<label for="payment_test">Testing flag</label>
+					<input
+						name="payment_test"
+						type="checkbox"
+						value="true" checked
+					>
+
 				</div>
 				<div class="form-group">
 					<input type="submit" value="Create" />
@@ -104,7 +127,7 @@
 					Store Name
 					<select name="store">
 						<% for (const store of stores) { %>
-						<option value="<%=store.slug%>"><%=store.name%></option>
+						<option value="<%=store.slug%>"><%=store.slug%></option>
 						<% } %>
 					</select>
 				</div>

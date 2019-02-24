@@ -52,7 +52,7 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 	});
 
 	app.get('/sync', async (req, res) => {
-		await sequelize.sync({ alter: !!+req.query.alter });
+		await sequelize.sync({ alter: !!+req.query.alter, force: true });
 		res.json({ ok: true });
 	});
 
@@ -63,6 +63,12 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 			phone: req.body.store_info_phone,
 			openingHours: req.body['store_info_opening-hours'],
 		};
+
+		const payment = {
+			provider: req.body.payment_provider,
+			test: (req.body.payment_test == 'true'),
+			accountId: req.body.payment_account_id,
+		}
 		await Store.create({
 			slug: req.body.store_slug,
 			name: req.body.store_name || req.body.store_slug,
@@ -70,6 +76,8 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 			about: req.body.store_about,
 			info,
 			shipping_details: req.body.shipping_details,
+			returns: req.body.returns,
+			payment,
 		});
 		res.redirect('/admin');
 	});
@@ -154,6 +162,7 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 	});
 
 	app.post('/import', async (req, res) => {
+		console.log('req.body.store', req.body.store);
 		const store = await Store.findOne({ where: { slug: req.body.store } });
 		if (!store) return res.json({ error: 'missing store id' });
 		let keys = [];
@@ -192,37 +201,48 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 			}),
 			{}
 		);
-
-		for (const { id: ShelfId, slug, name, info, description } of shelves) {
+		// console.log('variation', variations[0]);
+		console.log('shelves', shelves);
+		for (const { id: ShelfId, slug, name, info, description, shelfOrder } of shelves) {
+			// console.log('order', +shelfOrder);
 			const [shelf] = await Shelf.findCreateFind({
 				where: { slug, StoreId: store.id },
 				defaults: {
+					shelfOrder: Number(shelfOrder),
 					name: name.trim(),
 					description: description.trim(),
 					info: info.trim(),
+					slug,
 				},
 			});
+			// console.log('shelf', shelf.id);
 			await sequelize.transaction(async transaction => {
 				for (const chunk of _.chunk(
 					variations.filter(v => ShelfId == v.ShelfId && !v.id),
 					50
 				)) {
 					await Variation.bulkCreate(
-						chunk.map(({ sku, slug, price, sale_price, attributes }) => ({
-							ShelfId: shelf.id,
-							slug,
-							sku,
-							attrs: attributes,
-							price: +price || 0,
-							sale_price: +sale_price || null,
-							assets: {
-								images: keys
-									.filter(key =>
-										key.startsWith([store.slug, shelf.slug, slug, ''].join('/'))
-									)
-									.map(key => key.split('/').pop()),
-							},
-						})),
+						chunk.map(
+							({
+								variation: { sku, slug, price, sale_price, attributes },
+							}) => ({
+								ShelfId: shelf.id,
+								slug,
+								sku,
+								attrs: attributes,
+								price: +price || 0,
+								sale_price: +sale_price || null,
+								assets: {
+									images: keys
+										.filter(key =>
+											key.startsWith(
+												[store.slug, shelf.slug, slug, ''].join('/')
+											)
+										)
+										.map(key => key.split('/').pop()),
+								},
+							})
+						),
 						{
 							transaction,
 						}
@@ -238,23 +258,32 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 		if (!store) return res.json({ error: 'missing store id' });
 		const items = (await Variation.findAll({
 			attributes: [
-				'id',
-				'slug',
-				'sku',
+				['id', 'variation.id'],
+				// 'Variation.id',
+				['Variation.slug', 'variation.slug'],
+				['sku', 'variation.sku'],
 				['attrs', 'attributes'],
-				'price',
-				'sale_price',
-				'currency',
+				['price', 'variation.price'],
+				['sale_price', 'variation.sale_price'],
+				['currency', 'variation.currency'],
 			],
 			include: [
 				{
 					model: Shelf,
-					attributes: ['id', 'slug', 'name', 'info', 'description'],
+					attributes: [
+						'Shelf.id',
+						['Shelf.slug', 'shelf.slug'],
+						'name',
+						'info',
+						'description',
+						'order',
+					],
 					where: { StoreId: store.id },
 				},
 			],
 			raw: true,
 		})).map(flat);
+		console.log('items', items);
 
 		const csv = (data, headers) => {
 			if (!data.length) return '';

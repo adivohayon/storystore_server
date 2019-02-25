@@ -6,13 +6,14 @@ module.exports = class ICredit {
 	// GroupPrivateToken;
 	// storeSlug;
 	// order;
-	constructor(groupPrivateToken, isTest, storeSlug, order) {
+	constructor(groupPrivateToken, isTest, storeSlug, order, orderNumber) {
 		this.GroupPrivateToken = groupPrivateToken;
 		this.API_URL = isTest
 			? 'https://testicredit.rivhit.co.il/API/PaymentPageRequest.svc/'
 			: 'https://icredit.rivhit.co.il/API/PaymentPageRequest.svc';
 		this.storeSlug = storeSlug;
 		this.order = order;
+		this.orderNumber = orderNumber;
 	}
 
 	getIPNUrls(hostname) {
@@ -27,11 +28,13 @@ module.exports = class ICredit {
 	}
 
 	GetUrlRequest(referer, ipnUrls, items, quantities, shippingCost) {
+		const clientEmail = _.get(this.order, 'personal.email');
+		const redirectQuery = `/?order=success&orderNumber=${this.orderNumber}&orderEmail=${clientEmail}`;
 		const iCreditGetUrlRequest = {
 			GroupPrivateToken: this.GroupPrivateToken,
 			Currency: 1,
 			HideItemList: true,
-			RedirectURL: String(new URL('/?order=success', referer)),
+			RedirectURL: String(new URL(redirectQuery, referer)),
 			FailRedirectURL: String(new URL('/?order=error', referer)),
 
 			IPNURL: ipnUrls.success,
@@ -44,26 +47,29 @@ module.exports = class ICredit {
 			Country: 'ישראל',
 			Zipcode: _.get(this.order, 'address.zipCode'),
 			PhoneNumber: _.get(this.order, 'personal.phone'),
-			EmailAddress: _.get(this.order, 'personal.email'),
-			Order: String(this.order.id),
+			EmailAddress: clientEmail,
+			Order: this.orderNumber,
 			Custom1: 'storystore',
+			SendMail: true,
 			Items: items.map(item => {
-				let description = item.Shelf.name;
-				for (let attr in item.attrs) {
-					if (
-						item.attrs.hasOwnProperty(attr) &&
-						item.attrs[attr].label &&
-						item.attrs[attr].label.length > 0
-					) {
-						description += ` | ${item.attrs[attr].label}`;
+				if (item.id !== -1) {
+					let description = item.Shelf.name;
+					for (let attr in item.attrs) {
+						if (
+							item.attrs.hasOwnProperty(attr) &&
+							item.attrs[attr].label &&
+							item.attrs[attr].label.length > 0
+						) {
+							description += ` | ${item.attrs[attr].label}`;
+						}
 					}
-				}
-				return {
-					Quantity: quantities[String(item.id)],
-					UnitPrice: Number(item.sale_price) || Number(item.price) || 0,
-					Description: description,
-					CatalogNumber: item.sku,
-				};
+					return {
+						Quantity: quantities[String(item.id)],
+						UnitPrice: Number(item.sale_price) || Number(item.price) || 0,
+						Description: description,
+						CatalogNumber: item.sku,
+					};
+				} 
 			}),
 		};
 

@@ -2,13 +2,13 @@
 const nodemailer = require('nodemailer');
 module.exports = class Mailer {
 	constructor() {
-		this.user = 'adiv@shop-together.io';
-		this.pass = 'igfuopwebaxyyrzd';
+		// this.user = 'adiv@shop-together.io';
+		// this.pass = 'igfuopwebaxyyrzd';
 		this.transporter = nodemailer.createTransport({
 			service: 'gmail',
 			auth: {
-				user: 'adiv@shop-together.io',
-				pass: 'igfuopwebaxyyrzd',
+				user: 'noreply@storystore.co.il',
+				pass: 'boioasrihqqmwbij',
 			},
 		});
 
@@ -49,9 +49,6 @@ module.exports = class Mailer {
 		return new Promise((resolve, reject) => {
 			if (!this.validateEmail(to)) {
 				reject(`Destination email '${to}' is not valid`);
-			}
-			if (!this.validateEmail(from)) {
-				reject(`Sender email '${from}' is not valid`);
 			}
 
 			const mailOptions = {

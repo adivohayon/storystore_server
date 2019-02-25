@@ -73,7 +73,7 @@
 														<%=personal.firstName%> <%=personal.lastName%>
 													</td>
 													<td>
-														שליח עד הבית
+															<%=shipping.type%>
 													</td>
 												</tr>
 												<tr height="2"></tr>
@@ -82,7 +82,7 @@
 														<%=address.street%>
 													</td>
 													<td>
-														עד 3 ימי עסקים מיום ההזמנה
+															<%=shipping.eta%>
 													</td>
 												</tr>
 												<tr height="2"></tr>
@@ -111,7 +111,7 @@
 									<tr height="2"></tr>
 									<tr>
 										<td>
-											מספר ההזמנה: 4672579
+											מספר ההזמנה: <%=orderNumber%>
 										</td>
 									</tr>
 									<tr height="2"></tr>
@@ -140,7 +140,7 @@
 												<% for (const item of items) { %>
 													<tr>
 														<td>
-															<%=item.name%> / <%=item.variations%>
+															<%=item.name%> / <%=item.attributes%>
 															<p>כמות: <%=item.qty%></p>
 														</td>
 														<td dir="ltr" style="text-align: left; direction: ltr;"><%=currency%><%=item.price%></td>
@@ -159,19 +159,21 @@
 									<tr>
 										<td>
 											<table class="small-table" align="left">
-												<!-- <tr>
+												<tr>
 													<td>סה"כ ביניים</td>
-													<td dir="ltr" style="text-align: left; direction: ltr;"><%=subtotal%><%=currency%></td>
+													<td dir="ltr" style="text-align: left; direction: ltr;"><%=currency%><%=subtotal%></td>
 												</tr>
 												<tr height="2"></tr>
 												<tr>
 													<td>משלוח</td>
-													<td dir="ltr" style="text-align: left; direction: ltr;"><%=currency%>0</td>
+													<td dir="ltr" style="text-align: left; direction: ltr;">
+															<%=currency%><%=shipping.price%>
+													</td>
 												</tr>
-												<tr height="2"></tr> -->
+												<tr height="2"></tr>
 												<tr>
 													<td>סה"כ</td>
-													<td dir="ltr" style="text-align: left; direction: ltr;"><%=currency%><%=subtotal%></td>
+													<td dir="ltr" style="text-align: left; direction: ltr;"><%=currency%><%=total%></td>
 												</tr>
 											</table>
 										</td>

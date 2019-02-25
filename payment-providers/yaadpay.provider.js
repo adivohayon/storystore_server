@@ -2,11 +2,12 @@ const _ = require('lodash');
 
 const axios = require('axios');
 module.exports = class YaadPay {
-	constructor(masof, storeSlug, order) {
+	constructor(masof, storeSlug, order, orderNumber) {
 		this.Masof = masof;
 		this.API_URL = 'https://icom.yaad.net/p/';
 		this.storeSlug = storeSlug;
 		this.order = order;
+		this.orderNumber = orderNumber;
 	}
 
 	PayRequest(amount, transactionInfo) {
@@ -20,7 +21,7 @@ module.exports = class YaadPay {
 			PageLang: 'HEB',
 			Coin: 1,
 			SendHesh: true,
-			// Order
+			Order: orderNumber,
 			// Order: this.order,
 			Amount: amount,
 			Info: transactionInfo,

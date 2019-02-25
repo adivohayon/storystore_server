@@ -5,8 +5,11 @@ const axios = require('axios');
 const ICredit = require('./../payment-providers/i-credit.provider');
 const YaadPay = require('./../payment-providers/yaadpay.provider');
 const Mailer = require('./../helpers/mailer.helper');
+const util = require('util');
 const FormatDate = require('date-fns/format');
-
+const createOrderId = (storeId, orderId) => {
+	return storeId + '000' + orderId;
+};
 module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 	app.param('store', async (req, res, next, slug) => {
 		try {
@@ -35,13 +38,14 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 			where: { id: order.StoreId },
 		});
 		// From address
-		const storeDomain = store.info.email.substring(store.info.email.indexOf('@'));
-		console.log('storeDomain', storeDomain);
-		const from = `noreply${storeDomain}`;
+		const storeDomain = store.info.email.substring(
+			store.info.email.indexOf('@')
+		);
+		const from = `"${store.name}" <noreply@storystore.co.il>`;
 
 		// Organize items for email template
 		const dbItems = await Variation.findAll({
-			raw: true,
+			// raw: true,
 			attributes: ['id', 'attrs', 'price', 'sale_price', 'currency'],
 			where: {
 				id: {
@@ -60,54 +64,58 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 			],
 		});
 
-		const emailItems = order.items.map(orderItem => {
-			const dbItem = dbItems.find(v => (v.id = orderItem.id));
-			dbItem.name = dbItem['Shelf.name'];
-			dbItem.price = dbItem.sale_price || dbItem.price;
+		// console.log(util.inspect(dbItems, false, null, true /* enable colors */))
 
-			// Get attributes string
-			let variationsArr = [];
-			for (let key in dbItem.attrs) {
-				if (dbItem.attrs.hasOwnProperty(key)) {
-					const label = _.get(dbItem.attrs, [key, 'label'], '');
-					if (label.length > 0) {
-						variationsArr.push(label);
-					}
-				}
-			}
-			dbItem.variations = variationsArr.join(' - ');
+		// console.log('dbItems 1', dbItems[0].Shelf);
+		// console.log('dbItems 2', dbItems[1].Shelf);
 
-			delete dbItem.attrs;
-			delete dbItem.sale_price;
-			delete dbItem['Shelf.name'];
+		// for (let orderItem of order.items) {
+		// 	for (let dbItem of dbItems) {
 
-			const item = Object.assign(orderItem, dbItem);
+		// 	}
+		// }
+		const emailItems = dbItems.map(dbItem => {
+			const orderItem = order.items.find(item => item.id == dbItem.id);
+			console.log('orderItem', orderItem);
 
-			console.log('_item', item);
-			return item;
+			return {
+				name: dbItem.Shelf.name,
+				attributes: dbItem.attributesStr,
+				price: dbItem.finalPrice,
+				qty: orderItem.qty,
+				id: orderItem.id,
+				currency: dbItem.currency,
+			};
 		});
 
-		// Currency
+		const shipping = order.items.find(item => item.id === -1);
+		// return res.json(emailItems);
+
+		// // Currency
 		const currency =
 			emailItems[0].currency === 'ILS' ? '₪' : emailItems[0].currency;
 
-		// Subtotal
+		// // Subtotal
 		const subtotal = emailItems.reduce((acc, item) => {
 			acc += +item.price;
 			return acc;
 		}, 0);
 
-		// Logo
+		const total = subtotal + shipping.price;
+		// // Logo
 		const logo = `https://assets.storystore.co.il/${store.slug}/logo_${
 			store.slug
 		}_dark.png`;
 
 		// Date
 		const orderDate = FormatDate(order.createdAt, 'DD/MM/YYYY');
-		const subject = 'New transaction';
+		const subject = `ההזמנה מ-${store.name} בדרך אליך`;
+		const orderNumber = createOrderId(order.StoreId, order.id);
 
 		const mailer = new Mailer();
 		const view = mailer.getTemplate('new-order');
+
+		// console.log(emailItems);
 		res.render(
 			view,
 			{
@@ -116,9 +124,12 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 				items: emailItems,
 				store,
 				subtotal,
+				total,
 				logo,
 				currency,
 				orderDate,
+				orderNumber,
+				shipping
 			},
 			async (err, html) => {
 				try {
@@ -168,6 +179,7 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 				.status(404)
 				.json({ error: 'items were not found in database' });
 		}
+		
 
 		let total = items.reduce(
 			(total, v) =>
@@ -177,22 +189,31 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 			0
 		);
 
+		const shipping = req.body.shipping;
+		// items.push(shipping);
+		
+		if (shipping.price > 0) {
+			total += shipping.price;
+		}
+
 		// KOOKINT SPECIAL PRICING - FREE SHIPPING OVER 100 ILS
-		let shippingCost = 0;
+	
+
+		// let shippingCost = 0;
 		// console.log('store', req.params.store);
 		// console.log('total', total);
-		if (req.params.store === 'kookint') {
-			if (total < 100) {
-				shippingCost = 33;
-				total += shippingCost;
-			}
-		}
+		// if (req.params.store === 'kookint') {
+		// 	if (total < 100) {
+		// 		shippingCost = 33;
+		// 		total += shippingCost;
+		// 	}
+		// }
 
 		// console.log('store', req.store);
 		const order = await Order.create({
 			personal: req.body.personal,
 			address: req.body.address,
-			items: items.map(({ id }) => ({ id, qty: quantities[String(id)] })),
+			items: [...items.map(({ id }) => ({ id, qty: quantities[String(id)] })), shipping],
 			total,
 			StoreId: req.store.id,
 		});
@@ -200,10 +221,18 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 		const { provider, accountId, test } = req.store.payment || {};
 		let data;
 
+		const orderNumber = createOrderId(order.StoreId, order.id);
+
 		switch (provider) {
 			// I-CREDIT
 			case 'i-credit':
-				const iCredit = new ICredit(accountId, test, req.store.slug, order);
+				const iCredit = new ICredit(
+					accountId,
+					test,
+					req.store.slug,
+					order,
+					orderNumber
+				);
 				const ipnHost = __DEV__ ? process.env.SERVEO : req.hostname;
 				const ipnUrls = iCredit.getIPNUrls(ipnHost);
 
@@ -212,7 +241,7 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 					ipnUrls,
 					items,
 					quantities,
-					shippingCost
+					shipping.price
 				);
 				const { data } = await iCredit.getUrl(getUrlRequest);
 
@@ -221,7 +250,12 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 
 			// YAAD PAY
 			case 'yaadpay':
-				const yaadPay = new YaadPay(accountId, req.store.slug, order);
+				const yaadPay = new YaadPay(
+					accountId,
+					req.store.slug,
+					order,
+					orderNumber
+				);
 				const payRequest = yaadPay.PayRequest(
 					total,
 					'testing transaction info'

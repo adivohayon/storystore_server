@@ -97,7 +97,7 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 
 		// // Subtotal
 		const subtotal = emailItems.reduce((acc, item) => {
-			acc += +item.price;
+			acc += (+item.price * +item.qty);
 			return acc;
 		}, 0);
 

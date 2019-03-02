@@ -23,7 +23,8 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 
 	app.post('/new-order-email', async (req, res) => {
 		// const from = req.body.from || null;
-		const to = req.body.to || null;
+		const customerEmail = req.body.to || null;
+		
 
 		// Order
 		const orderId = +req.body.orderId || null;
@@ -37,6 +38,9 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 			attributes: ['name', 'tagline', 'info', 'slug'],
 			where: { id: order.StoreId },
 		});
+
+		const to = [customerEmail, store.info.email];
+
 		// From address
 		const storeDomain = store.info.email.substring(
 			store.info.email.indexOf('@')

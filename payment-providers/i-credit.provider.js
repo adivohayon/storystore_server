@@ -10,7 +10,7 @@ module.exports = class ICredit {
 		this.GroupPrivateToken = groupPrivateToken;
 		this.API_URL = isTest
 			? 'https://testicredit.rivhit.co.il/API/PaymentPageRequest.svc/'
-			: 'https://icredit.rivhit.co.il/API/PaymentPageRequest.svc';
+			: 'https://icredit.rivhit.co.il/API/PaymentPageRequest.svc/';
 		this.storeSlug = storeSlug;
 		this.order = order;
 		this.orderNumber = orderNumber;

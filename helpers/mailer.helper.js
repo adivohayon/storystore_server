@@ -47,8 +47,16 @@ module.exports = class Mailer {
 
 	send(from, to, subject, html) {
 		return new Promise((resolve, reject) => {
-			if (!this.validateEmail(to)) {
-				reject(`Destination email '${to}' is not valid`);
+			if (to.length > 1) {
+				to.forEach(email => {
+					if (!this.validateEmail(email)) {
+						reject(`Destination email '${email}' is not valid`);
+					}
+				})
+			} else {
+				if (!this.validateEmail(to)) {
+					reject(`Destination email '${to}' is not valid`);
+				}
 			}
 
 			const mailOptions = {

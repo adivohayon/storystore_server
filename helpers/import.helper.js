@@ -91,8 +91,9 @@ module.exports = class Import {
 		let transaction;
 		return new Promise(async (resolve, reject) => {
 			try {
-				// Loop through shelves and add to DB
+				// BEGIN LOOP - shelves
 				for (const { slug, name, description, info, shelf_order } of shelves) {
+					// Find or create shelf
 					const [shelf] = await this.Models.Shelf.findCreateFind({
 						where: { slug, StoreId: this.storeId },
 						defaults: {
@@ -104,18 +105,7 @@ module.exports = class Import {
 						},
 					});
 
-					// let transaction = await this.sequelize.transaction();
-
-					// await this.sequelize.transaction(async transaction => {
-					// 	const promises = [];
-					// 	for (let i = 0; i < variations.length; i++) {
-					// 		promises.push()
-					// 	}
-					// });
-
-					// transaction = await this.sequelize.transaction();
-
-					// Loop through variations
+					// BEGIN LOOP - variations
 					const dbVariationPromises = [];
 					for (const {
 						id,
@@ -149,16 +139,15 @@ module.exports = class Import {
 								// transaction,
 							})
 								.then(async dbVariation => {
-									// Loop through attributes
+									// BEGIN LOOP - attributes
 									const upsertAttributesPromises = [];
 									for (const {
 										label,
 										value,
 										ItemPropertyId,
 									} of variationAttributes) {
-										// push attribute to promises
-										console.log('ItemPropertyId', ItemPropertyId);
-										const dbAttribute = this.Models.Item_Attribute.findOrCreate({
+										// push findOrCreate for each attribute to promises
+										const dbAttribute = this.Models.Attribute.findOrCreate({
 											where: { label, value },
 											defaults: {
 												label,
@@ -166,62 +155,29 @@ module.exports = class Import {
 												ItemPropertyId: Number(ItemPropertyId) || 1,
 											},
 											// transaction,
-										});
-										// .then(attribute => {
-										// 	// console.log('attribute', dbVariation[0]);
-										// 	dbVariation[0].addAttribute(attribute);
-										// })
+										}).then(([instance, created]) => instance);
+
 										upsertAttributesPromises.push(dbAttribute);
 									}
+									// END LOOP - attributes
 
 									// Add attributes to variation
 									return Promise.all(upsertAttributesPromises)
 										.then(dbAttributes => {
 											console.log('dbAttributes', dbAttributes);
-											return dbVariation[0].addItemAttributes	(dbAttributes[0]);
+											return dbVariation[0].addAttributes(dbAttributes);
 										})
 										.catch(e => reject(e));
-									/*fmfj fjks
-								.then(
-									dbAttributes => {
-										console.log('dbAttribute', dbAttributes[0]);
-										return dbVariation[0].addAttribute(dbAttributes[0][3]);
-									}
-								);
-								*/
 								})
 								.catch(e => reject(e))
 						);
-						console.log('variation');
 					}
+					// END LOOP - variations
 
-					// this.sequelize.transaction(async t => {
-					// 	// Wait for all variations to be inserted
-					// 	// const dbVariations = await Promise.all(promises);
-					// 	// const attributesPromises = [];
-					// 	// for (const variation of dbVariations) {
-					// 	// 	attributesPromises.push(
-					// 	// 		variation.addAttributes()
-					// 	// 	)
-					// 	// }
-					// });
-					const dbVariations = await Promise.all(dbVariationPromises);
-					// await transaction.commit();
-
-					// const variationAttributes = attributes.filter(attr => attr.variation_id)
-					// // Loop through attributes
-					// for (const attribute of attributes) {
-
-					// }
-					// for (const variation of dbVariations) {
-					// 	attributesPromises.push(
-					// 		variation.addAttributes()
-					// 	)
-					// }
-					// await transaction.commit();
-					// });
+					await Promise.all(dbVariationPromises);
 				}
-				resolve('aaa');
+				// END LOOP - shelves
+				resolve({ message: 'Import finished successfully' });
 			} catch (err) {
 				console.log('!!!ERROR!!! - Import Helper / createShelves', err);
 				if (err) {

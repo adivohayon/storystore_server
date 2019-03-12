@@ -1,13 +1,13 @@
 'use strict';
 const _ = require('lodash');
 module.exports = (sequelize, Sequelize) => {
-	const model = sequelize.define('Item_Attribute', {
+	const model = sequelize.define('Attribute', {
 		label: { type: Sequelize.STRING, allowNull: false },
 		value: { type: Sequelize.STRING, allowNull: false },
 	}, {
 		name: {
-			singular: 'itemAttribute',
-			plural: 'itemAttributes',
+			singular: 'attribute',
+			plural: 'attributes',
 		},
 		indexes: [{ fields: ['label', 'value'], unique: true }],
 	});

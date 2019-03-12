@@ -12,8 +12,8 @@ module.exports = (sequelize, Sequelize) => {
 		}
 	);
 
-	model.associate = function({ Item_Attribute, Variation }) {
-		this.hasOne(Item_Attribute);
+	model.associate = function({ Attribute, Variation }) {
+		this.hasOne(Attribute);
 		this.hasOne(Variation);
 	};
 };

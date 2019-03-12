@@ -55,9 +55,9 @@ module.exports = (sequelize, Sequelize) => {
 		}
 	);
 
-	model.associate = function({ Shelf, Item_Attribute, VariationAttribute }) {
+	model.associate = function({ Shelf, Attribute, VariationAttribute }) {
 		this.belongsTo(Shelf);
-		this.belongsToMany(Item_Attribute, {
+		this.belongsToMany(Attribute, {
 			through: {
 				model: 'Variation_Attribute',
 				unique: false,

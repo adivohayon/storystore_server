@@ -36,7 +36,7 @@ const flat = req => {
 
 module.exports = (
 	app,
-	{ sequelize, Store, Shelf, Variation, Item_Attribute, Item_Property }
+	{ sequelize, Store, Shelf, Variation, Attribute, Item_Property }
 ) => {
 	app.use((req, res, next) => {
 		req.session.admin = true;
@@ -227,7 +227,7 @@ module.exports = (
 					.status(400)
 					.send({ message: 'Could not find store or missing store slug' });
 
-			const importModels = { Store, Shelf, Variation, Item_Attribute };
+			const importModels = { Store, Shelf, Variation, Attribute };
 			const importHelper = new ImportHelper(
 				store.id,
 				store.slug,
@@ -248,13 +248,13 @@ module.exports = (
 				attributes,
 			} = await importHelper.csvToTables(req.body.csv);
 
-			const test = await importHelper.injectTables(
+			const {message} = await importHelper.injectTables(
 				shelves,
 				variations,
 				attributes
 			);
 
-			return res.json({ test, shelves, variations, attributes });
+			return res.json({ message });
 		} catch (err) {
 			console.log('!!!ERROR!!! - Test Import', err);
 			return res.status(400).send({ message: err });

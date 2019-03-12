@@ -4,7 +4,8 @@ const Sequelize = require('sequelize');
 
 const sequelize = (module.exports = new Sequelize(process.env.DATABASE_URL, {
 	operatorsAliases: false,
-	logging: false,
+	// logging: false,
+	logging: console.log,
 	pool: {
 		max: 1,
 		acquire: 20000,
@@ -25,5 +26,6 @@ for (const controller of Object.values(
 }
 
 for (const model of Object.values(sequelize.models)) {
+	// console.log('model', model.name);
 	if (model.associate) model.associate(sequelize.models);
 }

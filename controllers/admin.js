@@ -3,6 +3,7 @@ const _ = require('lodash');
 const csvtojson = require('csvtojson');
 const AWS = require('aws-sdk');
 
+const ImportHelper = require('./../helpers/import.helper');
 const S3 = new AWS.S3();
 
 const flat = req => {
@@ -33,7 +34,10 @@ const flat = req => {
 	return scan(req, []);
 };
 
-module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
+module.exports = (
+	app,
+	{ sequelize, Store, Shelf, Variation, Item_Attribute, Item_Property }
+) => {
 	app.use((req, res, next) => {
 		req.session.admin = true;
 		next();
@@ -51,6 +55,41 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 		res.render('admin', { stores: await Store.findAll() });
 	});
 
+	app.get('/item-properties', async (req, res) => {
+		res.render('admin/item-properties', {
+			itemProperties: await Item_Property.findAll(),
+		});
+	});
+
+	app.post('/item-properties', async (req, res) => {
+		if (!req.body.type || !req.body.label) {
+			return res
+				.status(400)
+				.send({ message: `Missing info: could not find 'type' or 'label'.` });
+		}
+		try {
+			await Item_Property.create({
+				type: req.body.type,
+				label: req.body.label,
+			});
+
+			return res.redirect('/admin/item-properties');
+			// return res
+			// 	.status(200)
+			// 	.send({ message: 'New item property has been created.' });
+		} catch (err) {
+			if (
+				err.errors &&
+				err.errors[0] &&
+				err.errors[0].validatorKey === 'not_unique'
+			) {
+				return res.status(400).send({ message: err.errors[0].message });
+			}
+			console.log('!!!Error!!! - Admin / Create Item Property', err);
+			return res.status(400).send({ message: err });
+		}
+	});
+
 	app.get('/sync', async (req, res) => {
 		await sequelize.sync({ alter: !!+req.query.alter, force: true });
 		res.json({ ok: true });
@@ -66,9 +105,9 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 
 		const payment = {
 			provider: req.body.payment_provider,
-			test: (req.body.payment_test == 'true'),
+			test: req.body.payment_test == 'true',
 			accountId: req.body.payment_account_id,
-		}
+		};
 		await Store.create({
 			slug: req.body.store_slug,
 			name: req.body.store_name || req.body.store_slug,
@@ -161,29 +200,73 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 		res.redirect('/admin');
 	});
 
+	app.post('/add-attribute', async (req, res) => {
+		try {
+			const variation = await Variation.findOne({ where: { id: 3 } });
+			const newAttribute = {
+				label: req.body.label.trim() || '',
+				value: req.body.label.trim() || '',
+				ItemPropertyId: Number(req.body.ItemPropertyId),
+			};
+
+			const attribute = await Attribute.create(newAttribute);
+			await variation.addAttribute(attribute);
+
+			res.json({ message: 'Attribute added successfully.', attribute });
+		} catch (err) {
+			console.log('!!!Error!!! - Admin / Add Attribute', err);
+			res.status(400).send({ message: err });
+		}
+	});
+
+	app.post('/test-import', async (req, res) => {
+		try {
+			const store = await Store.findOne({ where: { slug: req.body.store } });
+			if (!store)
+				return res
+					.status(400)
+					.send({ message: 'Could not find store or missing store slug' });
+
+			const importModels = { Store, Shelf, Variation, Item_Attribute };
+			const importHelper = new ImportHelper(
+				store.id,
+				store.slug,
+				sequelize,
+				importModels
+			);
+			// const assets = await importHelper.getAssets();
+
+			if (!req.body.csv || req.body.csv.length == 0) {
+				return res.status(400).send({ message: 'CSV file was not found' });
+			}
+
+			// return res.json({ csv: req.body.csv });
+
+			const {
+				shelves,
+				variations,
+				attributes,
+			} = await importHelper.csvToTables(req.body.csv);
+
+			const test = await importHelper.injectTables(
+				shelves,
+				variations,
+				attributes
+			);
+
+			return res.json({ test, shelves, variations, attributes });
+		} catch (err) {
+			console.log('!!!ERROR!!! - Test Import', err);
+			return res.status(400).send({ message: err });
+		}
+	});
+
 	app.post('/import', async (req, res) => {
 		console.log('req.body.store', req.body.store);
 		const store = await Store.findOne({ where: { slug: req.body.store } });
 		if (!store) return res.json({ error: 'missing store id' });
-		let keys = [];
-		for (let ContinuationToken; ; ) {
-			const {
-				Contents,
-				NextContinuationToken,
-				IsTruncated,
-			} = await S3.listObjectsV2({
-				Bucket: process.env.BUCKET,
-				Prefix: store.slug,
-				ContinuationToken,
-			}).promise();
-			keys = keys.concat(
-				Contents.map(({ Key }) => Key).filter(key => /\.(jpg|mp4)$/.test(key))
-			);
-			if (!IsTruncated) break;
-			ContinuationToken = NextContinuationToken;
-		}
-		const csv = await csvtojson().fromString(req.body.csv);
 
+		const csv = await csvtojson().fromString(req.body.csv);
 		const { shelves, variations } = csv.reduce(
 			(
 				{ shelves = [], variations = [] },
@@ -203,7 +286,14 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 		);
 		// console.log('variation', variations[0]);
 		console.log('shelves', shelves);
-		for (const { id: ShelfId, slug, name, info, description, shelfOrder } of shelves) {
+		for (const {
+			id: ShelfId,
+			slug,
+			name,
+			info,
+			description,
+			shelfOrder,
+		} of shelves) {
 			// console.log('order', +shelfOrder);
 			const [shelf] = await Shelf.findCreateFind({
 				where: { slug, StoreId: store.id },

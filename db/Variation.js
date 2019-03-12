@@ -5,8 +5,7 @@ module.exports = (sequelize, Sequelize) => {
 		'Variation',
 		{
 			slug: { type: Sequelize.STRING, allowNull: false },
-			sku: Sequelize.STRING,
-			attrs: Sequelize.JSON,
+
 			price: {
 				type: Sequelize.DECIMAL(19, 4),
 				required: true,
@@ -23,9 +22,11 @@ module.exports = (sequelize, Sequelize) => {
 					return Math.floor(parseFloat(price));
 				},
 			},
-
 			currency: { type: Sequelize.CHAR(3), defaultValue: 'ILS' },
+			property_label: Sequelize.STRING,
+			property_value: Sequelize.STRING,
 			assets: Sequelize.JSON,
+			variation_order: Sequelize.INTEGER,
 		},
 		{
 			getterMethods: {
@@ -46,11 +47,22 @@ module.exports = (sequelize, Sequelize) => {
 					return variationsArr.join(' - ');
 				},
 			},
-			indexes: [{ fields: ['ShelfId', 'slug'] }],
+			indexes: [{ fields: ['ShelfId', 'slug'], unique: true }],
+			name: {
+				singular: 'variation',
+				plural: 'variations',
+			},
 		}
 	);
 
-	model.associate = function({ Shelf }) {
+	model.associate = function({ Shelf, Item_Attribute, VariationAttribute }) {
 		this.belongsTo(Shelf);
+		this.belongsToMany(Item_Attribute, {
+			through: {
+				model: 'Variation_Attribute',
+				unique: false,
+			},
+			foreignKey: 'variation_id',
+		});
 	};
 };

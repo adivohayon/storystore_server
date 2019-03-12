@@ -8,7 +8,7 @@ module.exports = (sequelize, Sequelize) => {
 			name: Sequelize.STRING,
 			description: Sequelize.TEXT,
 			info: Sequelize.TEXT,
-			shelfOrder: Sequelize.INTEGER,
+			shelf_order: Sequelize.INTEGER,
 		},
 		{
 			indexes: [{ fields: ['StoreId', 'slug'], unique: true }],

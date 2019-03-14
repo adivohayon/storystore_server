@@ -7,7 +7,7 @@
 		"node": ">=8.10"
 	},
 	"scripts": {
-		"offline": "$(npm bin)/sls offline start",
+		"offline": "$(npm bin)/sls offline start --noTimeout",
 		"deploy": "NODE_ENV=production $(npm bin)/sls deploy",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},

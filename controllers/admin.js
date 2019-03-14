@@ -234,7 +234,8 @@ module.exports = (
 				sequelize,
 				importModels
 			);
-			// const assets = await importHelper.getAssets();
+			const assets = await importHelper.getAssets();
+
 
 			if (!req.body.csv || req.body.csv.length == 0) {
 				return res.status(400).send({ message: 'CSV file was not found' });
@@ -248,10 +249,13 @@ module.exports = (
 				attributes,
 			} = await importHelper.csvToTables(req.body.csv);
 
-			const {message} = await importHelper.injectTables(
+			// return res.json(variations);
+
+			const { message } = await importHelper.injectTables(
 				shelves,
 				variations,
-				attributes
+				attributes,
+				assets
 			);
 
 			return res.json({ message });

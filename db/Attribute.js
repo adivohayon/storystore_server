@@ -15,6 +15,7 @@ module.exports = (sequelize, Sequelize) => {
 	model.associate = function({ Variation, Item_Property }) {
 		// this.hasMany(Item_Properties, { as: 'item_property' });
 		// this.hasOne(Item_Property);
+		this.belongsTo(Item_Property, { as: 'itemProperty' });
 		
 		this.belongsToMany(Variation, {
 			through: {

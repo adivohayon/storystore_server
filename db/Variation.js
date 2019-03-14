@@ -33,19 +33,19 @@ module.exports = (sequelize, Sequelize) => {
 				finalPrice() {
 					return this.get('sale_price') || this.get('price');
 				},
-				attributesStr() {
-					let variationsArr = [];
-					for (let key in this.attrs) {
-						if (this.attrs.hasOwnProperty(key)) {
-							const label = _.get(this.attrs, [key, 'label'], '');
-							if (label.length > 0) {
-								variationsArr.push(label);
-							}
-						}
-					}
+				// attributesStr() {
+				// 	let variationsArr = [];
+				// 	for (let key in this.attrs) {
+				// 		if (this.attrs.hasOwnProperty(key)) {
+				// 			const label = _.get(this.attrs, [key, 'label'], '');
+				// 			if (label.length > 0) {
+				// 				variationsArr.push(label);
+				// 			}
+				// 		}
+				// 	}
 
-					return variationsArr.join(' - ');
-				},
+				// 	return variationsArr.join(' - ');
+				// },
 			},
 			indexes: [{ fields: ['ShelfId', 'slug'], unique: true }],
 			name: {
@@ -55,8 +55,9 @@ module.exports = (sequelize, Sequelize) => {
 		}
 	);
 
-	model.associate = function({ Shelf, Attribute, VariationAttribute }) {
+	model.associate = function({ Shelf, Attribute, Item_Property }) {
 		this.belongsTo(Shelf);
+		this.belongsTo(Item_Property, { as: 'itemProperty' });
 		this.belongsToMany(Attribute, {
 			through: {
 				model: 'Variation_Attribute',

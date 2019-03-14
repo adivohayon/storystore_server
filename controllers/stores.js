@@ -18,7 +18,10 @@ const getS3Object = (bucket, path) => {
 		});
 	});
 };
-module.exports = (app, { Store, Shelf, Variation }) => {
+module.exports = (
+	app,
+	{ Store, Shelf, Variation, Attribute, Item_Property }
+) => {
 	app.get('/', async (req, res) => {
 		res.json(await Store.findAll());
 	});
@@ -27,18 +30,53 @@ module.exports = (app, { Store, Shelf, Variation }) => {
 		res.json(
 			await Store.findOne({
 				where: { slug: req.params.store },
-				
+
 				include: [
 					{
 						model: Shelf,
 						as: 'shelves',
-						
-						include: [{ model: Variation, as: 'variations' }],
+
+						include: [
+							{
+								model: Variation,
+								as: 'variations',
+								attributes: [
+									'id',
+									'slug',
+									'price',
+									'sale_price',
+									'currency',
+									'property_label',
+									'property_value',
+									'assets',
+									'variation_order',
+									'ShelfId',
+								],
+								include: [
+									{
+										model: Attribute,
+										as: 'attributes',
+										attributes: ['label', 'value'],
+										include: [
+											{
+												model: Item_Property,
+												as: 'itemProperty',
+												attributes: ['type', 'label'],
+											},
+										],
+										through: { attributes: [] },
+									},
+									{
+										model: Item_Property,
+										as: 'itemProperty',
+										attributes: ['type', 'label'],
+									},
+								],
+							},
+						],
 					},
 				],
-				order: [
-					[ 'shelves', 'shelfOrder', 'ASC'],
-				]
+				order: [['shelves', 'shelf_order', 'ASC']],
 			})
 		);
 	});

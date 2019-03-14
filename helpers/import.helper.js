@@ -39,6 +39,11 @@ module.exports = class Import {
 					reject(`Could not find assets for '${this.storeSlug}'`);
 				}
 				resolve(assets);
+				// const mappedAssets = assets.map(asset => {
+				// 	const [store, shelf, variation, fileName]  = asset.split('/');
+				// 	return
+				// })
+				// resolve(mappedAssets);
 			} catch (err) {
 				console.log('!!!ERROR!!! - Import Helper / getAssets', err);
 				reject(err);
@@ -67,6 +72,10 @@ module.exports = class Import {
 							'id'
 						);
 
+						// variations = variations.concat({
+						// 	...current.variation,
+						// });
+
 						attributes = attributes.concat({ ...current.attributes });
 						return {
 							variations,
@@ -87,17 +96,24 @@ module.exports = class Import {
 		});
 	}
 
-	injectTables(shelves, variations, attributes) {
+	injectTables(shelves, variations, attributes, allAssets) {
 		let transaction;
 		return new Promise(async (resolve, reject) => {
 			try {
 				// BEGIN LOOP - shelves
-				for (const { slug, name, description, info, shelf_order } of shelves) {
+				for (const {
+					id: shelfCsvId,
+					slug: shelfSlug,
+					name,
+					description,
+					info,
+					shelf_order,
+				} of shelves) {
 					// Find or create shelf
 					const [shelf] = await this.Models.Shelf.findCreateFind({
-						where: { slug, StoreId: this.storeId },
+						where: { slug: shelfSlug, StoreId: this.storeId },
 						defaults: {
-							slug,
+							slug: shelfSlug,
 							shelf_order: Number(shelf_order),
 							name: name.trim(),
 							description: description.trim(),
@@ -105,69 +121,101 @@ module.exports = class Import {
 						},
 					});
 
+					const shelfVariations = variations.filter(
+						variant => variant.shelfId == shelfCsvId
+					);
 					// BEGIN LOOP - variations
 					const dbVariationPromises = [];
 					for (const {
-						id,
-						slug,
+						id: variationCsvId,
+						slug: variationSlug,
 						price,
 						sale_price,
 						currency,
 						property_label,
 						property_value,
-						ItemPropertyId,
-					} of variations) {
+						itemPropertyId,
+					} of shelfVariations) {
 						// Get attributes for variation
 						const variationAttributes = attributes.filter(
-							attr => attr.variation_id === id
+							attr => attr.variation_id === variationCsvId
 						);
 
+						const assets = allAssets
+							.filter(key => {
+								return key.startsWith(
+									[this.storeSlug, shelfSlug, variationSlug, ''].join('/')
+								);
+							})
+							.map(key => key.split('/').pop());
+
+						//console.log('itemPropertyId', itemPropertyId);
 						// Push create variation promise
 						dbVariationPromises.push(
-							this.Models.Variation.findOrCreate({
-								where: { slug, ShelfId: shelf.id },
+							this.Models.Variation.findCreateFind({
+								where: { slug: variationSlug, ShelfId: shelf.id },
 								defaults: {
 									ShelfId: shelf.id,
-									slug,
+									slug: variationSlug,
 									currency,
 									price: Number(price) || 0,
 									sale_price: Number(sale_price) || null,
 									property_label: property_label.trim(),
 									property_value: property_value.trim(),
-									ItemPropertyId: Number(ItemPropertyId) || 0,
+									itemPropertyId: Number(itemPropertyId),
+									assets,
 								},
 								// transaction,
 							})
 								.then(async dbVariation => {
+									//console.log(dbVariation, id, dbVariation.slug);
 									// BEGIN LOOP - attributes
 									const upsertAttributesPromises = [];
 									for (const {
 										label,
 										value,
-										ItemPropertyId,
+										itemPropertyId,
 									} of variationAttributes) {
 										// push findOrCreate for each attribute to promises
+										//console.log('attribute', label);
 										const dbAttribute = this.Models.Attribute.findOrCreate({
 											where: { label, value },
 											defaults: {
 												label,
 												value,
-												ItemPropertyId: Number(ItemPropertyId) || 1,
+												itemPropertyId: Number(itemPropertyId) || 1,
 											},
 											// transaction,
-										}).then(([instance, created]) => instance);
+										}).then(([instance, created]) => {
+											//console.log('created', created);
+
+											// if it was just created make the association
+											if (created) {
+												return dbVariation[0].addAttribute(instance);
+											}
+											else {
+												// if not check if it's already associated
+												return dbVariation[0]
+													.hasAttribute(instance)
+													.then(result => {
+														// If not associated, make the association
+														if (!result) {
+															return dbVariation[0].addAttribute(instance);
+														} else {
+															return instance;
+														}
+													});
+											}
+										});
 
 										upsertAttributesPromises.push(dbAttribute);
 									}
 									// END LOOP - attributes
 
 									// Add attributes to variation
-									return Promise.all(upsertAttributesPromises)
-										.then(dbAttributes => {
-											console.log('dbAttributes', dbAttributes);
-											return dbVariation[0].addAttributes(dbAttributes);
-										})
-										.catch(e => reject(e));
+									return Promise.all(upsertAttributesPromises).catch(e =>
+										reject(e)
+									);
 								})
 								.catch(e => reject(e))
 						);

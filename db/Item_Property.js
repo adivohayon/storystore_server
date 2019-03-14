@@ -13,7 +13,7 @@ module.exports = (sequelize, Sequelize) => {
 	);
 
 	model.associate = function({ Attribute, Variation }) {
-		this.hasOne(Attribute);
-		this.hasOne(Variation);
+		// this.hasOne(Attribute);
+		// this.hasOne(Variation);
 	};
 };

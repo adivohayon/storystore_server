@@ -51,6 +51,10 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 		res.render('admin', { stores: await Store.findAll() });
 	});
 
+	app.get('/ping', async (req, res) => {
+		res.send('pong');
+	});
+
 	app.get('/sync', async (req, res) => {
 		await sequelize.sync({ alter: !!+req.query.alter, force: true });
 		res.json({ ok: true });
@@ -66,9 +70,9 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 
 		const payment = {
 			provider: req.body.payment_provider,
-			test: (req.body.payment_test == 'true'),
+			test: req.body.payment_test == 'true',
 			accountId: req.body.payment_account_id,
-		}
+		};
 		await Store.create({
 			slug: req.body.store_slug,
 			name: req.body.store_name || req.body.store_slug,
@@ -203,7 +207,14 @@ module.exports = (app, { sequelize, Store, Shelf, Variation }) => {
 		);
 		// console.log('variation', variations[0]);
 		console.log('shelves', shelves);
-		for (const { id: ShelfId, slug, name, info, description, shelfOrder } of shelves) {
+		for (const {
+			id: ShelfId,
+			slug,
+			name,
+			info,
+			description,
+			shelfOrder,
+		} of shelves) {
 			// console.log('order', +shelfOrder);
 			const [shelf] = await Shelf.findCreateFind({
 				where: { slug, StoreId: store.id },

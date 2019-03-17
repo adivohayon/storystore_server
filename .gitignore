@@ -82,4 +82,4 @@ dist
 
 import/stores/*
 
-.env.devleopment
+.env.development

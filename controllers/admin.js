@@ -92,6 +92,29 @@ module.exports = (
 
 	app.get('/sync', async (req, res) => {
 		await sequelize.sync({ alter: !!+req.query.alter, force: true });
+		console.log('afterSync');
+		const itemProperties = [
+			{ type: 'fashion_simple_size', label: 'מידה' },
+			{ type: 'fashion_simple_color', label: 'צבע' },
+			{ type: 'carver_axis', label: 'ציר' },
+			{ type: 'musical_key', label: 'סולם' },
+			{ type: 'size_cm', label: 'מידה בס״מ' },
+			{ type: 'musical_note_count', label: 'מס תווים' },
+			{ type: 'size_general', label: 'מידה' },
+		];
+		const createPromises = [];
+		for (const { type, label } of itemProperties) {
+			createPromises.push(
+				Item_Property.findCreateFind({
+					where: { type, label },
+					defaults: {
+						type,
+						label,
+					},
+				})
+			);
+		}
+		await Promise.all(createPromises);
 		res.json({ ok: true });
 	});
 
@@ -215,6 +238,18 @@ module.exports = (
 			res.json({ message: 'Attribute added successfully.', attribute });
 		} catch (err) {
 			console.log('!!!Error!!! - Admin / Add Attribute', err);
+			res.status(400).send({ message: err });
+		}
+	});
+
+	app.delete('/delete-shelves', async (req, res) => {
+		try {
+			await Shelf.destroy({ where: { StoreId: req.body.storeId } });
+			res.json({
+				message:
+					'successfuly removed all shelves for storeId: ' + req.body.storeId,
+			});
+		} catch (err) {
 			res.status(400).send({ message: err });
 		}
 	});

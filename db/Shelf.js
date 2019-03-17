@@ -17,6 +17,6 @@ module.exports = (sequelize, Sequelize) => {
 
 	model.associate = function({ Store, Variation }) {
 		this.belongsTo(Store);
-		this.hasMany(Variation, { as: 'variations' });
+		this.hasMany(Variation, { as: 'variations', onDelete: 'CASCADE' });
 	};
 };

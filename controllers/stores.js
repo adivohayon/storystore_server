@@ -20,7 +20,7 @@ const getS3Object = (bucket, path) => {
 };
 module.exports = (
 	app,
-	{ Store, Shelf, Variation, Attribute, Item_Property }
+	{ sequelize, Store, Shelf, Variation, Attribute, Item_Property }
 ) => {
 	app.get('/', async (req, res) => {
 		res.json(await Store.findAll());
@@ -52,6 +52,18 @@ module.exports = (
 									'variation_order',
 									'ShelfId',
 								],
+								where: sequelize.where(
+									sequelize.fn(
+										'array_length',
+										sequelize.col('assets'),
+										// 'shelves->variations.assets',
+										// 'array["shelves->variations"."assets"]',
+										// sequelize.cast(sequelize.col('assets'), 'array'),
+										// sequelize.fn('array', sequelize.col('assets')),
+										1
+									),
+									{ [sequelize.Op.gt]: 0 }
+								),
 								include: [
 									{
 										model: Attribute,

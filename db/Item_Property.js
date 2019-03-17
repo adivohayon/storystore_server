@@ -8,7 +8,7 @@ module.exports = (sequelize, Sequelize) => {
 			label: { type: Sequelize.STRING, allowNull: false },
 		},
 		{
-			indexes: [{ fields: ['id', 'type'], unique: true }],
+			indexes: [{ fields: ['type', 'label'], unique: true }],
 		}
 	);
 

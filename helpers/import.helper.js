@@ -149,7 +149,7 @@ module.exports = class Import {
 							})
 							.map(key => key.split('/').pop());
 
-						//console.log('itemPropertyId', itemPropertyId);
+						console.log('itemPropertyId', itemPropertyId);
 						// Push create variation promise
 						dbVariationPromises.push(
 							this.Models.Variation.findCreateFind({
@@ -162,7 +162,7 @@ module.exports = class Import {
 									sale_price: Number(sale_price) || null,
 									property_label: property_label.trim(),
 									property_value: property_value.trim(),
-									itemPropertyId: Number(itemPropertyId),
+									itemPropertyId: Number(itemPropertyId) || null,
 									assets,
 								},
 								// transaction,
@@ -183,7 +183,7 @@ module.exports = class Import {
 											defaults: {
 												label,
 												value,
-												itemPropertyId: Number(itemPropertyId) || 1,
+												itemPropertyId: Number(itemPropertyId) || null,
 											},
 											// transaction,
 										}).then(([instance, created]) => {

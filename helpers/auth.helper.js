@@ -1,5 +1,5 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+// const bcrypt = require('bcrypt');
+// const jwt = require('jsonwebtoken');
 
 const Helper = {
 	/**
@@ -7,18 +7,18 @@ const Helper = {
 	 * @param {string} password
 	 * @returns {string} returns hashed password
 	 */
-	hashPassword(password) {
-		return bcrypt.hashSync(password, bcrypt.genSaltSync(8));
-	},
-	/**
-	 * comparePassword
-	 * @param {string} hashPassword
-	 * @param {string} password
-	 * @returns {Boolean} return True or False
-	 */
-	comparePassword(hashPassword, password) {
-		return bcrypt.compareSync(password, hashPassword);
-	},
+	// hashPassword(password) {
+	// 	return bcrypt.hashSync(password, bcrypt.genSaltSync(8));
+	// },
+	// /**
+	//  * comparePassword
+	//  * @param {string} hashPassword
+	//  * @param {string} password
+	//  * @returns {Boolean} return True or False
+	//  */
+	// comparePassword(hashPassword, password) {
+	// 	return bcrypt.compareSync(password, hashPassword);
+	// },
 	/**
 	 * isValidEmail helper method
 	 * @param {string} email
@@ -32,16 +32,16 @@ const Helper = {
 	 * @param {string} id
 	 * @returns {string} token
 	 */
-	generateToken(id) {
-		const token = jwt.sign(
-			{
-				userId: id,
-			},
-			process.env.JWT_SECRET,
-			{ expiresIn: '7d' }
-		);
-		return token;
-	},
+	// generateToken(id) {
+	// 	const token = jwt.sign(
+	// 		{
+	// 			userId: id,
+	// 		},
+	// 		process.env.JWT_SECRET,
+	// 		{ expiresIn: '7d' }
+	// 	);
+	// 	return token;
+	// },
 	generateFindUserWhere(body) {
 		let where = null;
 
@@ -57,8 +57,8 @@ const Helper = {
 		return where;
 	},
 
-	verifyToken(token) {
-		return jwt.verify(token, process.env.JWT_SECRET);
-	}
+	// verifyToken(token) {
+	// 	return jwt.verify(token, process.env.JWT_SECRET);
+	// }
 };
 module.exports = Helper;

@@ -5,8 +5,7 @@ module.exports = (sequelize, Sequelize) => {
 		'Variation',
 		{
 			slug: { type: Sequelize.STRING, allowNull: false },
-			sku: Sequelize.STRING,
-			attrs: Sequelize.JSON,
+
 			price: {
 				type: Sequelize.DECIMAL(19, 4),
 				required: true,
@@ -23,34 +22,48 @@ module.exports = (sequelize, Sequelize) => {
 					return Math.floor(parseFloat(price));
 				},
 			},
-
 			currency: { type: Sequelize.CHAR(3), defaultValue: 'ILS' },
-			assets: Sequelize.JSON,
+			property_label: Sequelize.STRING,
+			property_value: Sequelize.STRING,
+			assets: Sequelize.ARRAY(Sequelize.STRING),
+			variation_order: Sequelize.INTEGER,
 		},
 		{
 			getterMethods: {
 				finalPrice() {
 					return this.get('sale_price') || this.get('price');
 				},
-				attributesStr() {
-					let variationsArr = [];
-					for (let key in this.attrs) {
-						if (this.attrs.hasOwnProperty(key)) {
-							const label = _.get(this.attrs, [key, 'label'], '');
-							if (label.length > 0) {
-								variationsArr.push(label);
-							}
-						}
-					}
+				// attributesStr() {
+				// 	let variationsArr = [];
+				// 	for (let key in this.attrs) {
+				// 		if (this.attrs.hasOwnProperty(key)) {
+				// 			const label = _.get(this.attrs, [key, 'label'], '');
+				// 			if (label.length > 0) {
+				// 				variationsArr.push(label);
+				// 			}
+				// 		}
+				// 	}
 
-					return variationsArr.join(' - ');
-				},
+				// 	return variationsArr.join(' - ');
+				// },
 			},
-			indexes: [{ fields: ['ShelfId', 'slug'] }],
+			indexes: [{ fields: ['ShelfId', 'slug'], unique: true }],
+			name: {
+				singular: 'variation',
+				plural: 'variations',
+			},
 		}
 	);
 
-	model.associate = function({ Shelf }) {
+	model.associate = function({ Shelf, Attribute, Item_Property }) {
 		this.belongsTo(Shelf);
+		this.belongsTo(Item_Property, { as: 'itemProperty' });
+		this.belongsToMany(Attribute, {
+			through: {
+				model: 'Variation_Attribute',
+				unique: false,
+			},
+			foreignKey: 'variation_id',
+		});
 	};
 };

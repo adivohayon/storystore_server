@@ -38,6 +38,7 @@ provider:
         - s3:*
       Resource: '*'
   environment:
+    JWT_SECRET: bhdr7GH4365u&fgd45
     COOKIE_SECRET: FwUGHVrf1cMzl9pa
     BUCKET:
       Ref: Bucket

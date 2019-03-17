@@ -4,6 +4,7 @@ const _ = require('lodash');
 const axios = require('axios');
 const ICredit = require('./../payment-providers/i-credit.provider');
 const YaadPay = require('./../payment-providers/yaadpay.provider');
+const Paypal = require('./../payment-providers/paypal.provider');
 const Mailer = require('./../helpers/mailer.helper');
 const util = require('util');
 const FormatDate = require('date-fns/format');
@@ -21,10 +22,24 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 		}
 	});
 
+	app.post('/paypal-test', async (req, res) => {
+		const order = req.body.order || '';
+		// const accessToken =
+		// 	'A21AAEr9O4_tErr5cVMyCshlVIBRLcvHVce2LJmbrkierZ5aK0aKj3-fxbvSUGTavpnkdDZqBiZ8RGV2TrCEqCtoHOpjjP7Ag';
+		// const paypalApi = 'https://api.sandbox.paypal.com';
+		const paypal = new Paypal(order);
+		console.log('%%%%%%%', paypal);
+		const newOrderId = paypal.createOrder().then(resp => {
+			console.log('NEW ORDER ID', resp, resp.data.id);
+			resp.data.id;
+		});
+		// const yo = paypal.yo();
+		res.send(newOrderId);
+	});
+
 	app.post('/new-order-email', async (req, res) => {
 		// const from = req.body.from || null;
 		const customerEmail = req.body.to || null;
-		
 
 		// Order
 		const orderId = +req.body.orderId || null;
@@ -101,7 +116,7 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 
 		// // Subtotal
 		const subtotal = emailItems.reduce((acc, item) => {
-			acc += (+item.price * +item.qty);
+			acc += +item.price * +item.qty;
 			return acc;
 		}, 0);
 
@@ -133,7 +148,7 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 				currency,
 				orderDate,
 				orderNumber,
-				shipping
+				shipping,
 			},
 			async (err, html) => {
 				try {
@@ -183,7 +198,6 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 				.status(404)
 				.json({ error: 'items were not found in database' });
 		}
-		
 
 		let total = items.reduce(
 			(total, v) =>
@@ -195,13 +209,12 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 
 		const shipping = req.body.shipping;
 		// items.push(shipping);
-		
+
 		if (shipping.price > 0) {
 			total += shipping.price;
 		}
 
 		// KOOKINT SPECIAL PRICING - FREE SHIPPING OVER 100 ILS
-	
 
 		// let shippingCost = 0;
 		// console.log('store', req.params.store);
@@ -217,7 +230,10 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 		const order = await Order.create({
 			personal: req.body.personal,
 			address: req.body.address,
-			items: [...items.map(({ id }) => ({ id, qty: quantities[String(id)] })), shipping],
+			items: [
+				...items.map(({ id }) => ({ id, qty: quantities[String(id)] })),
+				shipping,
+			],
 			total,
 			StoreId: req.store.id,
 		});

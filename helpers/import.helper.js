@@ -65,12 +65,35 @@ module.exports = class Import {
 							'id'
 						);
 
+						// variations = variations.concat({
+						// 	...current.variation,
+						// });
+						// variations = variations.filter(function(variant) {
+						// 	const key = variant.shelfId + '|' + variant.slug;
+						// 	console.log('key', key);
+						// 	if (!this[key]) {
+						// 		this[key] = true;
+						// 		return true;
+						// 	}
+						// }, Object.create(null));
+
 						variations = _.uniqBy(
 							variations.concat({
 								...current.variation,
 							}),
 							'id'
 						);
+
+						// const vars = test(variations);
+						// console.log(vars);
+						// return { variations };
+
+						// variations = _.uniqBy(
+						// 	variations.concat({
+						// 		...current.variation,
+						// 	}),
+						// 	'id'
+						// );
 
 						// variations = variations.concat({
 						// 	...current.variation,
@@ -192,8 +215,7 @@ module.exports = class Import {
 											// if it was just created make the association
 											if (created) {
 												return dbVariation[0].addAttribute(instance);
-											}
-											else {
+											} else {
 												// if not check if it's already associated
 												return dbVariation[0]
 													.hasAttribute(instance)

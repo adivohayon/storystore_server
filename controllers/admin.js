@@ -101,6 +101,9 @@ module.exports = (
 			{ type: 'size_cm', label: 'מידה בס״מ' },
 			{ type: 'musical_note_count', label: 'מס תווים' },
 			{ type: 'size_general', label: 'מידה' },
+			{ type: 'yoga_mat_thickness', label: 'עובי מזרן יוגה' },
+			{ type: 'euro_shoe_size', label: 'מידת נעליים ארופאית' },
+			{ type: 'fashion_euro_size', label: 'מידה' },
 		];
 		const createPromises = [];
 		for (const { type, label } of itemProperties) {
@@ -271,7 +274,6 @@ module.exports = (
 			);
 			const assets = await importHelper.getAssets();
 
-
 			if (!req.body.csv || req.body.csv.length == 0) {
 				return res.status(400).send({ message: 'CSV file was not found' });
 			}
@@ -284,7 +286,7 @@ module.exports = (
 				attributes,
 			} = await importHelper.csvToTables(req.body.csv);
 
-			// return res.json(variations);
+			// return res.json({ variations });
 
 			const { message } = await importHelper.injectTables(
 				shelves,

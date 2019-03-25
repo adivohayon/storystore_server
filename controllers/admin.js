@@ -104,6 +104,8 @@ module.exports = (
 			{ type: 'yoga_mat_thickness', label: 'עובי מזרן יוגה' },
 			{ type: 'euro_shoe_size', label: 'מידת נעליים ארופאית' },
 			{ type: 'fashion_euro_size', label: 'מידה' },
+			{ type: 'swimsuit_top_size', label: 'בגד ים חלק עליון' },
+			{ type: 'swimsuit_bottom_size', label: 'בגד ים חלק תחתון' },
 		];
 		const createPromises = [];
 		for (const { type, label } of itemProperties) {

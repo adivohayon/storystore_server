@@ -50,11 +50,11 @@
 							<td>
 								<table class="fixed-width">
 									<tr height="22">
-										<td><%=personal.firstName%> <%=personal.lastName%> שלום,</td>
+										<td><%=customer.first_name%> <%=customer.last_name%> שלום,</td>
 									</tr>
 									<tr height="22">
 										<td>
-											הזמנתך מ-<%=store.name%> התקבלה בהצלחה, אנו מודים לך על הרכישה.
+											הזמנתך מה-storystore של <%=store.name%> התקבלה בהצלחה, אנו מודים לך הרכישה.
 										</td>
 									</tr>
 									<tr height="5"></tr>
@@ -70,7 +70,7 @@
 												<tr height="2"></tr>
 												<tr>
 													<td>
-														<%=personal.firstName%> <%=personal.lastName%>
+														<%=customer.first_name%> <%=customer.last_name%>
 													</td>
 													<td>
 															<%=shipping.type%>
@@ -79,22 +79,22 @@
 												<tr height="2"></tr>
 												<tr>
 													<td>
-														<%=address.street%>
+														<%=customer.shipping_address%>
 													</td>
 													<td>
-															<%=shipping.eta%>
-													</td>
-												</tr>
-												<tr height="2"></tr>
-												<tr>
-													<td>
-															<%=address.city%>, <%=address.zipCode%>
+															<!-- <%=shipping.eta%> -->
 													</td>
 												</tr>
 												<tr height="2"></tr>
 												<tr>
 													<td>
-														<%=personal.phone%>
+														<%=customer.shipping_city%>, <%=customer.shipping_zip_code%>
+													</td>
+												</tr>
+												<tr height="2"></tr>
+												<tr>
+													<td>
+														<%=customer.phone%>
 													</td>
 												</tr>
 											</table>
@@ -188,20 +188,17 @@
 						</tr>
 						<tr height="3"></tr>
 						<tr>
-							<td>צוות <%=store.name%></td>
+							<td>צוות storystore</td>
 						</tr>
 						<tr height="3"></tr>
 						<tr>
-							<td><%=store.tagline%></td>
+							<td>לשאלות ושירות לקוחות</td>
 						</tr>
 						<tr height="3"></tr>
 						<tr>
-							<td><%=store.info.email%></td>
+							<td>service@storystore.co.il</td>
 						</tr>
 						<tr height="3"></tr>
-						<tr>
-							<td><%=store.info.phone%></td>
-						</tr>
 					</table>
 				</td>
 			</tr>

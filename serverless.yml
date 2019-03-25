@@ -40,6 +40,8 @@ provider:
   environment:
     JWT_SECRET: bhdr7GH4365u&fgd45
     COOKIE_SECRET: FwUGHVrf1cMzl9pa
+    PAYPAL_CLIENT_ID: AQN_Vlemd7Er_ZLrWUUVUalbxQSRstdwWrqJpRodF23Bvp27FHcTJMy4IHhTX2v1BxgxYG0HVW-EdZOg
+    PAYPAL_SECRET: EPeqiLghYHLB3RM1X5R-zyhC3XcG5H1sLtY3t2PssHREbu5Os7jwojffebKKUHauQ8Nyo4dAqoj0x56u
     BUCKET:
       Ref: Bucket
     DATABASE_URL:

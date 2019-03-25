@@ -12,7 +12,7 @@ module.exports = (sequelize, Sequelize) => {
 		indexes: [{ fields: ['label', 'value'], unique: true }],
 	});
 
-	model.associate = function({ Variation, Item_Property }) {
+	model.associate = function({ Variation, Item_Property, Order }) {
 		// this.hasMany(Item_Properties, { as: 'item_property' });
 		// this.hasOne(Item_Property);
 		this.belongsTo(Item_Property, { as: 'itemProperty' });
@@ -22,7 +22,8 @@ module.exports = (sequelize, Sequelize) => {
 				model: 'Variation_Attribute',
 				unique: false,
 			},
-			foreignKey: 'attribute_id',
+			foreignKey: 'attributeId',
 		});
+
 	};
 };

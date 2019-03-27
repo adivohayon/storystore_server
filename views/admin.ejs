@@ -5,10 +5,18 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 		<script>
 			$(function() {
-				$(document).on('change', 'input[type="file"]', function() {
+				$(document).on('change', '#file-input__store-csv', function() {
 					const reader = new FileReader();
 					reader.onload = function(e) {
-						$('textarea[name="csv"]').val(e.target.result);
+						$('textarea[name="store_csv"]').val(e.target.result);
+					};
+					reader.readAsText(this.files[0]);
+				})
+
+				$(document).on('change', '#file-input__shelves-csv', function() {
+					const reader = new FileReader();
+					reader.onload = function(e) {
+						$('textarea[name="shelves_csv"]').val(e.target.result);
 					};
 					reader.readAsText(this.files[0]);
 				});
@@ -118,12 +126,24 @@
 				</div>
 			</form>
 		</div>
+		<section id="import-store">
+			<form  method="POST" action="/admin/import/store">
+				<h2>Import Store Table</h2>
+				<div class="form-group">
+					<input type="file" id="file-input__store-csv" />
+					<textarea name="store_csv"></textarea>
+				</div>
+				<div class="form-group">
+					<input type="submit" value="Import Store" />
+				</div>
+			</form>
+		</section>
 		<div>
-			<form method="POST" action="/admin/test-import">
+			<form method="POST" action="/admin/import/shelves">
 				<div class="form-group">
 					<h2>Shelves & Variations CSV (Import)</h2>
-					<input type="file" />
-					<textarea name="csv"></textarea>
+					<input type="file" id="file-input__shelves-csv" />
+					<textarea name="shelves_csv"></textarea>
 					Store Name
 					<select name="store">
 						<% for (const store of stores) { %>
@@ -132,7 +152,7 @@
 					</select>
 				</div>
 				<div class="form-group">
-					<input type="submit" value="Upload" />
+					<input type="submit" value="Import Shelves" />
 				</div>
 				<!-- <input type="checkbox" id="uploadAssets" name="uploadAssets" checked /> Upload Assets to S3 -->
 			</form>

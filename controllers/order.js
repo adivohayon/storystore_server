@@ -8,37 +8,23 @@ const Paypal = require('./../payment-providers/paypal.provider');
 const Mailer = require('./../helpers/mailer.helper');
 const util = require('util');
 const FormatDate = require('date-fns/format');
-const createOrderId = (storeId, orderId) => {
-	return storeId + '000' + orderId;
+const createOrderId = (prefix, orderId) => {
+	return prefix + orderId;
 };
-module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
-	app.param('store', async (req, res, next, slug) => {
-		try {
-			if (!(req.store = await Store.findOne({ where: { slug } })))
-				return next(new Error(`invalid store slug: ${slug}`));
-			next();
-		} catch (err) {
-			next(err);
-		}
-	});
-
-	app.post('/paypal-test', async (req, res) => {
-		const order = req.body.order || '';
-		// const accessToken =
-		// 	'A21AAEr9O4_tErr5cVMyCshlVIBRLcvHVce2LJmbrkierZ5aK0aKj3-fxbvSUGTavpnkdDZqBiZ8RGV2TrCEqCtoHOpjjP7Ag';
-		// const paypalApi = 'https://api.sandbox.paypal.com';
-		const paypal = new Paypal(order);
-		console.log('%%%%%%%', paypal);
-		const newOrderId = paypal.createOrder().then(resp => {
-			console.log('NEW ORDER ID', resp, resp.data.id);
-			resp.data.id;
-		});
-		// const yo = paypal.yo();
-		res.send(newOrderId);
-	});
-
+module.exports = (
+	app,
+	{
+		Sequelize,
+		Store,
+		Shelf,
+		Variation,
+		Order,
+		Customer,
+		Attribute,
+		Variation_Attribute,
+	}
+) => {
 	app.post('/new-order-email', async (req, res) => {
-		// const from = req.body.from || null;
 		const customerEmail = req.body.to || null;
 
 		// Order
@@ -46,69 +32,78 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 		if (!orderId) {
 			return res.status(422).send('no orderId');
 		}
-		const order = await Order.findOne({ where: { id: orderId } });
-
-		// Store name
-		const store = await Store.findOne({
-			attributes: ['name', 'tagline', 'info', 'slug'],
-			where: { id: order.StoreId },
-		});
-
-		const to = [customerEmail, store.info.email];
-
-		// From address
-		const storeDomain = store.info.email.substring(
-			store.info.email.indexOf('@')
-		);
-		const from = `"${store.name}" <noreply@storystore.co.il>`;
-
-		// Organize items for email template
-		const dbItems = await Variation.findAll({
-			// raw: true,
-			attributes: ['id', 'attrs', 'price', 'sale_price', 'currency'],
-			where: {
-				id: {
-					[Sequelize.Op.in]: order.items
-						.map(({ id }) => Number(id))
-						.filter(id => id),
-				},
-			},
+		const order = await Order.findOne({
+			attributes: [
+				'id',
+				'status',
+				'total',
+				'shipping_price',
+				'shipping_type',
+				'createdAt',
+			],
 			include: [
 				{
-					model: Shelf,
-					where: { StoreId: order.StoreId },
-					attributes: ['name'],
-					raw: true,
+					attributes: ['id'],
+					model: Variation_Attribute,
+					as: 'items',
+					through: { as: 'orderItem', attributes: ['quantity'] },
+					include: [
+						{
+							model: Attribute,
+							attributes: ['label'],
+						},
+						{
+							model: Variation,
+							include: [
+								{
+									attributes: ['name', 'description'],
+									model: Shelf,
+									include: [
+										{
+											model: Store,
+											attributes: ['id', 'slug', 'name', 'tagline', 'info'],
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+				{
+					model: Customer,
+					as: 'customer',
 				},
 			],
+			where: { id: orderId },
 		});
 
-		// console.log(util.inspect(dbItems, false, null, true /* enable colors */))
+		// GET FIRST STORE
+		const store = order.items[0].variation.Shelf.Store;
 
-		// console.log('dbItems 1', dbItems[0].Shelf);
-		// console.log('dbItems 2', dbItems[1].Shelf);
+		// const to = [customerEmail, store.info.email];
+		const to = [customerEmail, 'adiv@shop-together.io'];
 
-		// for (let orderItem of order.items) {
-		// 	for (let dbItem of dbItems) {
+		// From address
+		const from = `"${store.name}" <noreply@storystore.co.il>`;
 
-		// 	}
-		// }
-		const emailItems = dbItems.map(dbItem => {
-			const orderItem = order.items.find(item => item.id == dbItem.id);
-			console.log('orderItem', orderItem);
-
+		const emailItems = order.items.map(item => {
 			return {
-				name: dbItem.Shelf.name,
-				attributes: dbItem.attributesStr,
-				price: dbItem.finalPrice,
-				qty: orderItem.qty,
-				id: orderItem.id,
-				currency: dbItem.currency,
+				name: item.variation.Shelf.name,
+				attributes: `${item.variation.property_label} - ${
+					item.attribute.label
+				}`,
+				price: item.variation.finalPrice,
+				qty: item.orderItem.quantity,
+				id: item.id,
+				currency: item.variation.currency,
 			};
 		});
 
-		const shipping = order.items.find(item => item.id === -1);
 		// return res.json(emailItems);
+		const shipping = {
+			type: order.shipping_type,
+			price: order.shipping_price,
+		};
 
 		// // Currency
 		const currency =
@@ -129,7 +124,7 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 		// Date
 		const orderDate = FormatDate(order.createdAt, 'DD/MM/YYYY');
 		const subject = `ההזמנה מ-${store.name} בדרך אליך`;
-		const orderNumber = createOrderId(order.StoreId, order.id);
+		const orderNumber = createOrderId('6700', order.id);
 
 		const mailer = new Mailer();
 		const view = mailer.getTemplate('new-order');
@@ -138,8 +133,7 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 		res.render(
 			view,
 			{
-				personal: order.personal,
-				address: order.address,
+				customer: order.customer,
 				items: emailItems,
 				store,
 				subtotal,
@@ -158,7 +152,7 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 
 					// return res.send(html);
 					const mailResp = await mailer.send(from, to, subject, html);
-					console.log('mailResp', mailResp);
+					// console.log('mailResp', mailResp);
 					return res.send(200);
 				} catch (err) {
 					console.error(err);
@@ -168,180 +162,160 @@ module.exports = (app, { Sequelize, Store, Shelf, Variation, Order }) => {
 		);
 	});
 
-	app.post('/:store', async (req, res) => {
-		// console.log('address', req.body.address);
-		// console.log('personal', req.body.personal);
-		// console.log('items', req.body.items);
-		const quantities = req.body.items.reduce(
-			(o, { id, qty }) => Object.assign(o, { [String(id)]: Number(qty) || 1 }),
-			{}
-		);
-		const items = await Variation.findAll({
-			where: {
-				id: {
-					[Sequelize.Op.in]: req.body.items
-						.map(({ id }) => Number(id))
-						.filter(id => id),
-				},
-			},
-			include: [
-				{
-					model: Shelf,
-					where: { StoreId: req.store.id },
-					attributes: ['name'],
-				},
-			],
-		});
-
-		if (items.length < 1) {
-			return res
-				.status(404)
-				.json({ error: 'items were not found in database' });
+	app.post('/', async (req, res) => {
+		if (!req.body.customer) {
+			return res.status(422).json({ error: 'missing customer info' });
 		}
-
-		let total = items.reduce(
-			(total, v) =>
-				total +
-				(Number(v.sale_price) || Number(v.price) || 0) *
-					quantities[String(v.id)],
-			0
-		);
+		if (!req.body.items || !req.body.items.length) {
+			return res.status(422).json({ error: 'missing items' });
+		}
 
 		const shipping = req.body.shipping;
-		// items.push(shipping);
-
-		if (shipping.price > 0) {
-			total += shipping.price;
+		if (!shipping || shipping.price < 0) {
+			return res
+				.status(422)
+				.json({ error: 'Shipping price does not exist or is negative' });
 		}
 
-		// KOOKINT SPECIAL PRICING - FREE SHIPPING OVER 100 ILS
+		try {
+			const quantitiesMap = {};
+			const allVariationAttributeIds = [];
+			for (const item of req.body.items) {
+				for (const variationAttributeId of item.variationAttributeIds) {
+					quantitiesMap[String(variationAttributeId)] = item.qty;
+					allVariationAttributeIds.push(variationAttributeId);
+				}
+			}
+			const variationAttributeIds = [...new Set(allVariationAttributeIds)];
+			
+			// Get items
+			const items = await Variation_Attribute.findAll({
+				attributes: ['id'],
+				where: {
+					id: {
+						[Sequelize.Op.in]: variationAttributeIds,
+					},
+				},
+				include: [
+					{ model: Attribute, attributes: ['label'] },
+					{ model: Variation, include: [{ model: Shelf }] },
+				],
+			});
 
-		// let shippingCost = 0;
-		// console.log('store', req.params.store);
-		// console.log('total', total);
-		// if (req.params.store === 'kookint') {
-		// 	if (total < 100) {
-		// 		shippingCost = 33;
-		// 		total += shippingCost;
-		// 	}
-		// }
+			// No items error
+			if (items.length < 1) {
+				return res
+					.status(404)
+					.json({ error: 'items were not found in database' });
+			}
 
-		// console.log('store', req.store);
-		const order = await Order.create({
-			personal: req.body.personal,
-			address: req.body.address,
-			items: [
-				...items.map(({ id }) => ({ id, qty: quantities[String(id)] })),
-				shipping,
-			],
-			total,
-			StoreId: req.store.id,
-		});
-
-		const { provider, accountId, test } = req.store.payment || {};
-		let data;
-
-		const orderNumber = createOrderId(order.StoreId, order.id);
-
-		switch (provider) {
-			// I-CREDIT
-			case 'i-credit':
-				const iCredit = new ICredit(
-					accountId,
-					test,
-					req.store.slug,
-					order,
-					orderNumber
+			let total = items.reduce((total, v) => {
+				return (
+					total + Number(v.variation.finalPrice) * quantitiesMap[String(v.id)]
 				);
-				const ipnHost = __DEV__ ? process.env.SERVEO : req.hostname;
-				const ipnUrls = iCredit.getIPNUrls(ipnHost);
+			}, 0);
 
-				const getUrlRequest = iCredit.GetUrlRequest(
-					req.headers.referer,
-					ipnUrls,
-					items,
-					quantities,
-					shipping.price
+			if (shipping && shipping.price && shipping.price > 0) {
+				total += shipping.price;
+			}
+
+
+			const customer = await Customer.create(req.body.customer);
+			const order = await Order.create({
+				total,
+				shipping_type: shipping.type,
+				shipping_price: shipping.price,
+				customerId: customer.id,
+			});
+			const associationPromises = [];
+			for (let item of items) {
+				associationPromises.push(
+					order.setItems(item, {
+						through: {
+							quantity: quantitiesMap[String(item.id)],
+						},
+					})
 				);
-				const { data } = await iCredit.getUrl(getUrlRequest);
+			}
+			await Promise.all(associationPromises);
 
-				await order.update({ status: 'PENDING', request: data });
-				return res.json({ url: data.URL });
+			const storeId = items[0].variation.Shelf.StoreId;
+			const isTestEnv =
+				(await Store.findOne({ where: { id: storeId } })).payment.test || true;
+			
+				const paypal = new Paypal(isTestEnv);
+			await paypal.generateAccessToken();
 
-			// YAAD PAY
-			case 'yaadpay':
-				const yaadPay = new YaadPay(
-					accountId,
-					req.store.slug,
-					order,
-					orderNumber
-				);
-				const payRequest = yaadPay.PayRequest(
-					total,
-					'testing transaction info'
-				);
+			const returnUrl =
+				'http' +
+				`://${req.get('host')}/order/capture?db_order_id=${
+					order.id
+				}&is_test=${isTestEnv}`;
 
-				const { url } = yaadPay.getUrl(payRequest);
-				// const resp = await yaadPay.pay(payRequest);
-				await order.update({ status: 'PENDING', request: url });
+			const urlPrefix = req.headers.origin
+				? req.headers.origin
+				: 'http://localhost:3000/';
+			const cancelUrl = `${urlPrefix}?order=error&orderId=${order.id}`;
+			
+			const createOrderRequest = paypal.createOrderRequest(
+				'CAPTURE',
+				items,
+				returnUrl,
+				cancelUrl
+			);
+			const { data } = await paypal.createOrder(createOrderRequest);
 
-				return res.json({ url });
-			// return res.status(200);
-			default:
-				return res.status(400).send('Payment provider not found: ' + provider);
+			data.referredUrl = `${req.headers.origin}?order=success&orderId=${
+				order.id
+			}&orderEmail=${customer.email}`;
+
+			// Update order
+			await order.update({ payment_provider_request: data });
+			const approveUrl = data.links.find(l => l.rel === 'approve').href;
+			return res.json({ url: approveUrl });
+		} catch (err) {
+			console.log('err', err);
+			if (err.response && err.response.data) {
+				return res.status(500).send(err.response.data);
+			}
+			return res.status(500).send(err);
 		}
-
-		// console.log('data', data);
-
-		// await order.update({ status: 'PENDING', request: data });
-		// res.json({ url: data.URL });
 	});
 
-	app.all('/:store/redirect', async (req, res) => {
-		const { Token = '' } = req.query;
-		res.json({
-			method: req.method,
-			url: req.url,
-			query: req.query,
-			headers: req.headers,
-			body: req.body,
-		});
-	});
-
-	app.all('/:store/redirect/error', async (req, res) => {
-		res.json({
-			method: req.method,
-			url: req.url,
-			query: req.query,
-			headers: req.headers,
-			body: req.body,
-		});
-	});
-
-	app.all('/:store/ipn/:order', async (req, res) => {
-		const order = await Order.findOne({ where: { id: +req.params.order } });
-		if (!order) return res.status(404).end();
-		if (order.status) {
-			console.warn(`duplicate callback for order ${order.id}`);
-			return res.status(400).end();
-		}
-		if (+req.query.error) {
-			await order.update({ response: req.body, status: 'ERROR' });
-			return res.json({});
-		}
-		await order.update({ response: req.body });
-		const { token: GroupPrivateToken, test } = req.store.payment || {};
-
-		const iCredit = new ICredit(GroupPrivateToken, test, req.store.slug, order);
-		const verifyRequest = iCredit.VerifyRequest(
-			req.body.SaleId,
-			req.body.TransactionAmount
-		);
+	app.get('/capture', async (req, res) => {
 		const {
-			data: { Status },
-		} = await iCredit.verify(verifyRequest);
+			token: paypalOrderId,
+			db_order_id: dbOrderId,
+			is_test: isTestEnvStr,
+		} = req.query;
+		const isTestEnv = isTestEnvStr === 'true';
+		const paypal = new Paypal(isTestEnv);
+		console.log('query', req.query);
+		try {
+			await paypal.generateAccessToken();
+			await paypal.capturePayment(paypalOrderId);
 
-		await order.update({ status: Status == 'VERIFIED' ? 'SUCCESS' : 'ERROR' });
-		res.json({});
+			console.log('CAPTURED');
+			const order = await Order.findOne({ where: { id: dbOrderId } });
+			const referredUrl = order.payment_provider_request.referredUrl;
+			// update order status to "completed" and insert response data
+			await Order.update(
+				{ status: 'PAYMENT_SUCCESS' },
+				{ where: { id: dbOrderId } }
+			);
+
+			// redirect back to store_slug.storystore.co.il?order=success
+			return res.redirect(referredUrl);
+		} catch (err) {
+			await Order.update(
+				{ status: 'PAYMENT_ERROR' },
+				{ where: { id: dbOrderId } }
+			);
+			if (err && err.response && err.response.status === 422) {
+				return res.json(err.response.data);
+			}
+			console.log(err.response.data);
+			return res.sendStatus(500);
+		}
 	});
 };

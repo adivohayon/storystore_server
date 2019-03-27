@@ -18,12 +18,12 @@ module.exports = (sequelize, Sequelize) => {
 			payment: Sequelize.JSON,
 			returns: Sequelize.TEXT,
 			shipping_details: Sequelize.TEXT,
+			// coupon_code: Sequelize.STRING,
 		},
 		{}
 	);
 
 	model.associate = function({ Shelf, Order }) {
 		this.hasMany(Shelf, { as: 'shelves' });
-		this.hasMany(Order, { as: 'orders' });
 	};
 };

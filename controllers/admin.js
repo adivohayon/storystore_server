@@ -4,6 +4,7 @@ const csvtojson = require('csvtojson');
 const AWS = require('aws-sdk');
 
 const ImportHelper = require('./../helpers/import.helper');
+const ImportStoreHelper = require('./../helpers/import-store.helper');
 const S3 = new AWS.S3();
 
 const flat = req => {
@@ -259,7 +260,24 @@ module.exports = (
 		}
 	});
 
-	app.post('/test-import', async (req, res) => {
+	app.post('/import/store', async (req, res) => {
+		if (!req.body.store_csv || req.body.store_csv.length == 0) {
+			return res.status(400).send({ message: 'CSV file was not found' });
+		}
+		try {
+			const importHelper = new ImportStoreHelper(Store);
+			const stores = await importHelper.csvToTables(req.body.store_csv);
+			await importHelper.injectTable(stores);
+			return res.json({message: `Imported ${stores.length} store(s) successfully`});
+		} catch (err) {
+			console.log('err', err);
+			// return res.status(500).json({err});
+			res.sendStatus(500)
+			// next(err);
+		}
+	});
+
+	app.post('/import/shelves', async (req, res) => {
 		try {
 			const store = await Store.findOne({ where: { slug: req.body.store } });
 			if (!store)
@@ -276,7 +294,7 @@ module.exports = (
 			);
 			const assets = await importHelper.getAssets();
 
-			if (!req.body.csv || req.body.csv.length == 0) {
+			if (!req.body.shelves_csv || req.body.shelves_csv.length == 0) {
 				return res.status(400).send({ message: 'CSV file was not found' });
 			}
 
@@ -286,7 +304,7 @@ module.exports = (
 				shelves,
 				variations,
 				attributes,
-			} = await importHelper.csvToTables(req.body.csv);
+			} = await importHelper.csvToTables(req.body.shelves_csv);
 
 			// return res.json({ variations });
 

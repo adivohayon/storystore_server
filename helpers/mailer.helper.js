@@ -39,7 +39,7 @@ module.exports = class Mailer {
 					console.error('ERROR:', err);
 					reject(err);
 				}
-				console.log('HTML', html);
+				// console.log('HTML', html);
 				resolve(html);
 			});
 		});
@@ -65,7 +65,7 @@ module.exports = class Mailer {
 				subject,
 				html,
 			};
-			console.log(mailOptions);
+			// console.log(mailOptions);
 			this.transporter.sendMail(mailOptions, (err, info) => {
 				if (err) {
 					reject(err);

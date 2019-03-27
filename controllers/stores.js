@@ -41,7 +41,7 @@ module.exports = (
 								model: Variation,
 								as: 'variations',
 								attributes: [
-									'id',
+									['id', 'variationId'],
 									'slug',
 									'price',
 									'sale_price',
@@ -53,15 +53,7 @@ module.exports = (
 									'ShelfId',
 								],
 								where: sequelize.where(
-									sequelize.fn(
-										'array_length',
-										sequelize.col('assets'),
-										// 'shelves->variations.assets',
-										// 'array["shelves->variations"."assets"]',
-										// sequelize.cast(sequelize.col('assets'), 'array'),
-										// sequelize.fn('array', sequelize.col('assets')),
-										1
-									),
+									sequelize.fn('array_length', sequelize.col('assets'), 1),
 									{ [sequelize.Op.gt]: 0 }
 								),
 								include: [
@@ -76,7 +68,7 @@ module.exports = (
 												attributes: ['type', 'label'],
 											},
 										],
-										through: { attributes: [] },
+										through: { attributes: ['id'], as: 'variationAttribute'},
 									},
 									{
 										model: Item_Property,

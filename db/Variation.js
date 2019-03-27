@@ -27,6 +27,7 @@ module.exports = (sequelize, Sequelize) => {
 			property_value: Sequelize.STRING,
 			assets: Sequelize.ARRAY(Sequelize.STRING),
 			variation_order: Sequelize.INTEGER,
+			product_url: Sequelize.STRING,
 		},
 		{
 			getterMethods: {
@@ -55,7 +56,7 @@ module.exports = (sequelize, Sequelize) => {
 		}
 	);
 
-	model.associate = function({ Shelf, Attribute, Item_Property }) {
+	model.associate = function({ Shelf, Attribute, Item_Property, Order }) {
 		this.belongsTo(Shelf);
 		this.belongsTo(Item_Property, { as: 'itemProperty' });
 		this.belongsToMany(Attribute, {
@@ -63,7 +64,7 @@ module.exports = (sequelize, Sequelize) => {
 				model: 'Variation_Attribute',
 				unique: false,
 			},
-			foreignKey: 'variation_id',
+			foreignKey: 'variationId',
 		});
 	};
 };

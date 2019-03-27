@@ -1,42 +1,88 @@
 const _ = require('lodash');
 const axios = require('axios');
-axios.defaults.baseURL = 'https://api.sandbox.paypal.com';
-const token =
-	'A21AAEr9O4_tErr5cVMyCshlVIBRLcvHVce2LJmbrkierZ5aK0aKj3-fxbvSUGTavpnkdDZqBiZ8RGV2TrCEqCtoHOpjjP7Ag';
-axios.defaults.headers.common = { Authorization: `bearer ${token}` };
+
 module.exports = class Paypal {
-	constructor(order) {
-		this.order = order;
-		// this.accessToken = accessToken;
-		// this.paypalApi = paypalApi;
+	constructor(isTestEnv) {
+		this.clientId = process.env.PAYPAL_CLIENT_ID || '';
+		this.clientSecret = process.env.PAYPAL_SECRET || '';
+		this.accessToken = '';
+		this.apiUrl = isTestEnv ? 'https://api.sandbox.paypal.com' : 'https://api.paypal.com';
+		this.axiosConfig = {};
 	}
 
-	createOrder() {
-		// console.log('$$$$$$', this.order);
-		return (
-			axios
-				.post('/v2/checkout/orders', this.order)
-				// .then(resp => {
-				// 	console.log('CREATE ORDER RESP', resp);
-				// })
-				.catch(err => {
-					console.log('CREATE ORDER ERROR', error);
-				})
+	async generateAccessToken() {
+		const payload = 'grant_type=client_credentials';
+		const resp = (await axios.post(
+			`${this.apiUrl}/v1/oauth2/token`,
+			payload,
+			{
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+				},
+				// withCredentials: true,
+				auth: {
+					username: this.clientId,
+					password: this.clientSecret,
+				},
+			}
+		)).data;
+		this.accessToken = resp.access_token;
+		this.axiosConfig = {
+			headers: { Authorization: 'bearer ' + this.accessToken },
+		};
+	}
+
+	capturePayment(orderId, token) {
+		return axios.post(
+			`${this.apiUrl}/v2/checkout/orders/${orderId}/capture`,
+			{
+				payment_source: {
+					// token, // ?
+				},
+			},
+			this.axiosConfig
 		);
 	}
 
-	captureOrder(orderId) {
-		return axios
-			.post('/v2/checkout/orders/' + orderId + '/capture')
-			.then(resp => {
-				console.log('CAPTURE ORDER RESP', resp);
-			})
-			.catch(err => {
-				console.log('CAPTURE ORDER ERROR', err);
-			});
+	orderDetails(orderId) {
+		return axios.get(
+			`${this.apiUrl}/v2/checkout/orders/${orderId}`,
+			this.axiosConfig
+		);
 	}
 
-	// yo() {
-	// 	return 'yooo: ' + this.test;
-	// }
+	createOrderRequest(intent, dbItems, returnUrl, cancelUrl) {
+		const items = dbItems.map(item => {
+			return {
+				name: `${item.variation.Shelf.name} - ${item.variation.property_label} - ${item.attribute.label}`,
+				unit_amount: item.variation.finalPrice,
+				quantity: 1,
+			};
+		});
+		return {
+			intent,
+			application_context: {
+				return_url: returnUrl,
+				cancel_url: cancelUrl,
+			},
+			purchase_units: [
+				{
+					amount: {
+						currency_code: 'USD',
+						value: 400,
+						items,
+					},
+				},
+			],
+		};
+	}
+
+	createOrder(orderRequest) {
+		return axios
+			.post(
+				`${this.apiUrl}/v2/checkout/orders`,
+				orderRequest,
+				this.axiosConfig
+			)
+	}
 };

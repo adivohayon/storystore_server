@@ -201,7 +201,7 @@ module.exports = (
 					{ model: Variation, include: [{ model: Shelf }] },
 				],
 			});
-
+			// return res.json(items);
 			// No items error
 			if (items.length < 1) {
 				return res
@@ -241,14 +241,13 @@ module.exports = (
 
 			const storeId = items[0].variation.Shelf.StoreId;
 			const isTestEnv =
-				(await Store.findOne({ where: { id: storeId } })).payment.test || true;
+				(await Store.findOne({ where: { id: storeId } })).payment.test;
 			
 				const paypal = new Paypal(isTestEnv);
 			await paypal.generateAccessToken();
 
 			const returnUrl =
-				'http' +
-				`://${req.get('host')}/order/capture?db_order_id=${
+				`${req.protocol}://${req.get('host')}/order/capture?db_order_id=${
 					order.id
 				}&is_test=${isTestEnv}`;
 
@@ -295,7 +294,7 @@ module.exports = (
 			await paypal.generateAccessToken();
 			await paypal.capturePayment(paypalOrderId);
 
-			console.log('CAPTURED');
+			// console.log('CAPTURED');
 			const order = await Order.findOne({ where: { id: dbOrderId } });
 			const referredUrl = order.payment_provider_request.referredUrl;
 			// update order status to "completed" and insert response data

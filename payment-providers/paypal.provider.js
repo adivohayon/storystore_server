@@ -3,15 +3,17 @@ const axios = require('axios');
 
 module.exports = class Paypal {
 	constructor(isTestEnv) {
-		this.clientId = process.env.PAYPAL_CLIENT_ID || '';
-		this.clientSecret = process.env.PAYPAL_SECRET || '';
+		this.clientId = isTestEnv ? process.env.PAYPAL_TESTING_CLIENT_ID : process.env.PAYPAL_CLIENT_ID;
+		this.clientSecret = isTestEnv ? process.env.PAYPAL_TESTING_SECRET : process.env.PAYPAL_SECRET;
 		this.accessToken = '';
+		console.log('isTestEnv', isTestEnv);
 		this.apiUrl = isTestEnv ? 'https://api.sandbox.paypal.com' : 'https://api.paypal.com';
 		this.axiosConfig = {};
 	}
 
 	async generateAccessToken() {
 		const payload = 'grant_type=client_credentials';
+		// console.log('CLIENT ID', this.clientId);
 		const resp = (await axios.post(
 			`${this.apiUrl}/v1/oauth2/token`,
 			payload,

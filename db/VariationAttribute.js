@@ -10,7 +10,7 @@ module.exports = (sequelize, Sequelize) => {
 				autoIncrement: true,
 			},
 			variationId: { type: Sequelize.INTEGER, allowNull: false },
-			attributeId: { type: Sequelize.INTEGER, allowNull: false },
+			attributeId: { type: Sequelize.INTEGER },
 			attribute_order: Sequelize.INTEGER,
 		},
 		{

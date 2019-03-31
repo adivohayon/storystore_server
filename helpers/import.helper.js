@@ -158,12 +158,15 @@ module.exports = class Import {
 						property_label,
 						property_value,
 						itemPropertyId,
+						product_url,
 					} of shelfVariations) {
 						// Get attributes for variation
 						const variationAttributes = attributes.filter(
 							attr => attr.variation_id === variationCsvId
 						);
-
+						
+						// return res.json(variationAttributes);
+						// console.log('variationAttributes', variationAttributes);
 						const assets = allAssets
 							.filter(key => {
 								return key.startsWith(
@@ -186,12 +189,16 @@ module.exports = class Import {
 									property_label: property_label.trim(),
 									property_value: property_value.trim(),
 									itemPropertyId: Number(itemPropertyId) || null,
+									product_url: product_url,
 									assets,
 								},
 								// transaction,
 							})
 								.then(async dbVariation => {
 									//console.log(dbVariation, id, dbVariation.slug);
+									if (variationAttributes.length === 0) {
+										variationAttributes.push({label: null, value: null, itemPropertyId: null});
+									}
 									// BEGIN LOOP - attributes
 									const upsertAttributesPromises = [];
 									for (const {
@@ -211,6 +218,7 @@ module.exports = class Import {
 											// transaction,
 										}).then(([instance, created]) => {
 											//console.log('created', created);
+
 
 											// if it was just created make the association
 											if (created) {

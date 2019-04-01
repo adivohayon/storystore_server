@@ -187,7 +187,7 @@ module.exports = (
 				}
 			}
 			const variationAttributeIds = [...new Set(allVariationAttributeIds)];
-			
+
 			// Get items
 			const items = await Variation_Attribute.findAll({
 				attributes: ['id'],
@@ -219,7 +219,6 @@ module.exports = (
 				total += shipping.price;
 			}
 
-
 			const customer = await Customer.create(req.body.customer);
 			const order = await Order.create({
 				total,
@@ -240,25 +239,27 @@ module.exports = (
 			await Promise.all(associationPromises);
 
 			const storeId = items[0].variation.Shelf.StoreId;
-			const isTestEnv =
-				(await Store.findOne({ where: { id: storeId } })).payment.test;
-			
-				const paypal = new Paypal(isTestEnv);
+			const isTestEnv = (await Store.findOne({ where: { id: storeId } }))
+				.payment.test;
+
+			const paypal = new Paypal(isTestEnv);
+			const protocol =
+				process.env.NODE_ENV === 'development' ? 'http' : req.protocol;
 			await paypal.generateAccessToken();
 
-			const returnUrl =
-				`${req.protocol}://${req.get('host')}/order/capture?db_order_id=${
-					order.id
-				}&is_test=${isTestEnv}`;
+			const returnUrl = `${protocol}://${req.get(
+				'host'
+			)}/order/capture?db_order_id=${order.id}&is_test=${isTestEnv}`;
 
 			const urlPrefix = req.headers.origin
 				? req.headers.origin
 				: 'http://localhost:3000/';
 			const cancelUrl = `${urlPrefix}?order=error&orderId=${order.id}`;
-			
+
 			const createOrderRequest = paypal.createOrderRequest(
 				'CAPTURE',
 				items,
+				total,
 				returnUrl,
 				cancelUrl
 			);

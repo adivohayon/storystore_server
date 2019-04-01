@@ -53,7 +53,7 @@ module.exports = class Paypal {
 		);
 	}
 
-	createOrderRequest(intent, dbItems, returnUrl, cancelUrl) {
+	createOrderRequest(intent, dbItems, total, returnUrl, cancelUrl) {
 		const items = dbItems.map(item => {
 			return {
 				name: `${item.variation.Shelf.name} - ${item.variation.property_label} - ${item.attribute.label}`,
@@ -70,8 +70,8 @@ module.exports = class Paypal {
 			purchase_units: [
 				{
 					amount: {
-						currency_code: 'USD',
-						value: 400,
+						currency_code: 'ILS',
+						value: total,
 						items,
 					},
 				},

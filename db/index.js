@@ -4,8 +4,8 @@ const Sequelize = require('sequelize');
 
 const sequelize = (module.exports = new Sequelize(process.env.DATABASE_URL, {
 	operatorsAliases: false,
-	logging: false,
-	// logging: console.log,
+	// logging: false,
+	logging: console.log,
 	pool: {
 		max: 1,
 		acquire: 20000,

@@ -187,7 +187,7 @@ module.exports = (
 				}
 			}
 			const variationAttributeIds = [...new Set(allVariationAttributeIds)];
-			
+
 			// Get items
 			const items = await Variation_Attribute.findAll({
 				attributes: ['id'],
@@ -201,7 +201,7 @@ module.exports = (
 					{ model: Variation, include: [{ model: Shelf }] },
 				],
 			});
-
+			// return res.json(items);
 			// No items error
 			if (items.length < 1) {
 				return res
@@ -218,7 +218,6 @@ module.exports = (
 			if (shipping && shipping.price && shipping.price > 0) {
 				total += shipping.price;
 			}
-
 
 			const customer = await Customer.create(req.body.customer);
 			const order = await Order.create({
@@ -240,26 +239,27 @@ module.exports = (
 			await Promise.all(associationPromises);
 
 			const storeId = items[0].variation.Shelf.StoreId;
-			const isTestEnv =
-				(await Store.findOne({ where: { id: storeId } })).payment.test || true;
-			
-				const paypal = new Paypal(isTestEnv);
+			const isTestEnv = (await Store.findOne({ where: { id: storeId } }))
+				.payment.test;
+
+			const paypal = new Paypal(isTestEnv);
+			const protocol =
+				process.env.NODE_ENV === 'development' ? 'http' : req.protocol;
 			await paypal.generateAccessToken();
 
-			const returnUrl =
-				'http' +
-				`://${req.get('host')}/order/capture?db_order_id=${
-					order.id
-				}&is_test=${isTestEnv}`;
+			const returnUrl = `${protocol}://${req.get(
+				'host'
+			)}/order/capture?db_order_id=${order.id}&is_test=${isTestEnv}`;
 
 			const urlPrefix = req.headers.origin
 				? req.headers.origin
 				: 'http://localhost:3000/';
 			const cancelUrl = `${urlPrefix}?order=error&orderId=${order.id}`;
-			
+
 			const createOrderRequest = paypal.createOrderRequest(
 				'CAPTURE',
 				items,
+				total,
 				returnUrl,
 				cancelUrl
 			);
@@ -295,7 +295,7 @@ module.exports = (
 			await paypal.generateAccessToken();
 			await paypal.capturePayment(paypalOrderId);
 
-			console.log('CAPTURED');
+			// console.log('CAPTURED');
 			const order = await Order.findOne({ where: { id: dbOrderId } });
 			const referredUrl = order.payment_provider_request.referredUrl;
 			// update order status to "completed" and insert response data

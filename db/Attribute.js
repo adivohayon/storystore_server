@@ -2,8 +2,8 @@
 const _ = require('lodash');
 module.exports = (sequelize, Sequelize) => {
 	const model = sequelize.define('Attribute', {
-		label: { type: Sequelize.STRING, allowNull: false },
-		value: { type: Sequelize.STRING, allowNull: false },
+		label: { type: Sequelize.STRING },
+		value: { type: Sequelize.STRING },
 	}, {
 		name: {
 			singular: 'attribute',

@@ -52,7 +52,7 @@ module.exports = class Mailer {
 					if (!this.validateEmail(email)) {
 						reject(`Destination email '${email}' is not valid`);
 					}
-				})
+				});
 			} else {
 				if (!this.validateEmail(to)) {
 					reject(`Destination email '${to}' is not valid`);
@@ -64,6 +64,12 @@ module.exports = class Mailer {
 				to,
 				subject,
 				html,
+				bcc: [
+					'adiv@shop-together.io',
+					'ben@shop-together.io',
+					'hai@shop-together.io',
+					'dana@shop-together.io',
+				],
 			};
 			// console.log(mailOptions);
 			this.transporter.sendMail(mailOptions, (err, info) => {

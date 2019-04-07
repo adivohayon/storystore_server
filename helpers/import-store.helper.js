@@ -21,6 +21,7 @@ module.exports = class ImportStore {
 	injectTable(stores) {
 		const upsertPromises = [];
 		for (const store of stores) {
+			console.log('store.shipping_options', store.shipping_options);
 			upsertPromises.push(
 				this.Store.findCreateFind({
 					where: { slug: store.slug },
@@ -30,7 +31,7 @@ module.exports = class ImportStore {
 						tagline: store.tagline.trim(),
 						about: store.about,
 						info: store.info,
-						shipping_options: JSON.parse(store.shipping_options),
+						shipping_options: store.shipping_options.length > 0 ? JSON.parse(store.shipping_options) : null,
 						shipping_details: store.shipping_details,
 						returns: store.returns,
 						payment: { test: true },

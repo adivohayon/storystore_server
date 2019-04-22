@@ -30,7 +30,7 @@ module.exports = class YaadPay {
 			ClientLName: _.get(this.order, 'personal.lastName', 'unknown'),
 			street: _.get(this.order, 'address.street'),
 			city: _.get(this.order, 'address.city'),
-			zip: _.get(this.order, 'address.zipCode'),
+			// zip: _.get(this.order, 'address.zipCode'),
 			phone: _.get(this.order, 'personal.phone'),
 			email: _.get(this.order, 'personal.email'),
 		};

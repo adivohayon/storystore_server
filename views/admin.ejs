@@ -46,10 +46,6 @@
 						<th>Slug</th>
 						<th>Name</th>
 						<th>Tagline</th>
-						<th>About</th>
-						<th>Info</th>
-						<th>Shipping Details</th>
-						<th>Returns</th>
 						<th>Payments Provider</th>
 					</tr>
 				</thead>
@@ -60,11 +56,7 @@
 						<td><%=store.slug%></td>
 						<td><%=store.name%></td>
 						<td><%=store.tagline%></td>
-						<td><%=store.about%></td>
-						<td><%- JSON.stringify(store.info) %></td>
-						<td><%=store.shipping_details%></td>
-						<td><%=store.returns%></td>
-						<td><%=store.payment%></td>
+						<td><%- JSON.stringify(store.payment) %></td>
 					</tr>
 					<% } %>
 				</tbody>
@@ -138,6 +130,7 @@
 				</div>
 			</form>
 		</section>
+		<!-- IMPORT SHELVES -->
 		<div>
 			<form method="POST" action="/admin/import/shelves">
 				<div class="form-group">
@@ -157,6 +150,26 @@
 				<!-- <input type="checkbox" id="uploadAssets" name="uploadAssets" checked /> Upload Assets to S3 -->
 			</form>
 		</div>
+		<!-- REMOVE SHELVES -->
+		<div>
+			<form method="POST" action="/admin/delete-shelves">
+				<div class="form-group">
+					<h2>Remove shelves</h2>
+					Store Name
+					<select name="storeId">
+						<% for (const store of stores) { %>
+						<option value="<%=store.id%>"><%=store.slug%></option>
+						<% } %>
+					</select>
+				</div>
+				<div class="form-group">
+					<input type="submit" value="Remove Shelves" />
+				</div>
+				<!-- <input type="checkbox" id="uploadAssets" name="uploadAssets" checked /> Upload Assets to S3 -->
+			</form>
+		</div>
+
+
 		<div>
 		<form method="POST" action="/admin/export">
 			<div class="form-group">

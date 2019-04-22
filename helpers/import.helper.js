@@ -159,6 +159,7 @@ module.exports = class Import {
 						property_value,
 						itemPropertyId,
 						product_url,
+						variation_order
 					} of shelfVariations) {
 						// Get attributes for variation
 						const variationAttributes = attributes.filter(
@@ -191,6 +192,7 @@ module.exports = class Import {
 									itemPropertyId: Number(itemPropertyId) || null,
 									product_url: product_url,
 									assets,
+									variation_order: Number(variation_order) || null,
 								},
 								// transaction,
 							})

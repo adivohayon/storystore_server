@@ -249,9 +249,13 @@ module.exports = (
 		}
 	});
 
-	app.delete('/delete-shelves', async (req, res) => {
+	app.post('/delete-shelves', async (req, res) => {
+		// return res.json(req.body.storeId);
+		if (!Number(req.body.storeId)) {
+			return res.status(400).send({ message: 'no storeId provided' });
+		}
 		try {
-			await Shelf.destroy({ where: { StoreId: req.body.storeId } });
+			await Shelf.destroy({ where: { StoreId: Number(req.body.storeId) } });
 			res.json({
 				message:
 					'successfuly removed all shelves for storeId: ' + req.body.storeId,
@@ -269,11 +273,13 @@ module.exports = (
 			const importHelper = new ImportStoreHelper(Store);
 			const stores = await importHelper.csvToTables(req.body.store_csv);
 			await importHelper.injectTable(stores);
-			return res.json({message: `Imported ${stores.length} store(s) successfully`});
+			return res.json({
+				message: `Imported ${stores.length} store(s) successfully`,
+			});
 		} catch (err) {
 			console.log('err', err);
 			// return res.status(500).json({err});
-			res.sendStatus(500)
+			res.sendStatus(500);
 			// next(err);
 		}
 	});

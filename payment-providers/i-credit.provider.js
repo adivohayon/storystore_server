@@ -45,7 +45,7 @@ module.exports = class ICredit {
 			POB: _.get(this.order, 'address.pob', 0),
 			City: _.get(this.order, 'address.city'),
 			Country: 'ישראל',
-			Zipcode: _.get(this.order, 'address.zipCode'),
+			// Zipcode: _.get(this.order, 'address.zipCode'),
 			PhoneNumber: _.get(this.order, 'personal.phone'),
 			EmailAddress: clientEmail,
 			Order: this.orderNumber,

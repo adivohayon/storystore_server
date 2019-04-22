@@ -10,11 +10,17 @@ const getS3Object = (bucket, path) => {
 		};
 		s3.getObject(getParams, (err, data) => {
 			if (err) {
+				if (err.code === 'NoSuchKey') {
+					resolve(false);
+				}
 				reject(err);
 			}
-
-			const str = data.Body.toString('utf-8');
-			resolve(str);
+			if (data) {
+				const str = data.Body.toString('utf-8');
+				resolve(str);
+			} else {
+				resolve(false);
+			}
 		});
 	});
 };
@@ -37,6 +43,8 @@ module.exports = (
 					'about',
 					'info',
 					'shipping_options',
+					'returns',
+					'shipping_details',
 				],
 				where: { slug: req.params.store },
 			})
@@ -170,12 +178,20 @@ module.exports = (
 			'storystore-api',
 			`${req.params.store}/${req.params.store}_policy.txt`
 		);
+		if (!policy) {
+			return res.status(404).send('Policy not found');
+		}
+
 		const customerService = await getS3Object(
 			'storystore-api',
 			`${req.params.store}/${req.params.store}_customer_service.txt`
 		);
 
-		res.json({ policy, customerService });
+		if (customerService) {
+			res.json({ policy, customerService });
+		}
+
+		return res.json({ policy });
 	});
 
 	app.get('/:store/shelves', async (req, res) => {

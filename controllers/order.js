@@ -5,9 +5,11 @@ const axios = require('axios');
 const ICredit = require('./../payment-providers/i-credit.provider');
 const YaadPay = require('./../payment-providers/yaadpay.provider');
 const Paypal = require('./../payment-providers/paypal.provider');
+const Payplus = require('./../payment-providers/payplus.provider');
 const Mailer = require('./../helpers/mailer.helper');
 const util = require('util');
 const FormatDate = require('date-fns/format');
+// const axios = require('axios');
 const createOrderId = (prefix, orderId) => {
 	return prefix + orderId;
 };
@@ -162,6 +164,38 @@ module.exports = (
 		);
 	});
 
+	app.get('/payplus-test', async (req, res) => {
+		try {
+			/* ---------------START PAYPLUS------------------ */
+			const payplus = new Payplus('108ebd12540248bc9fb2ac7e600cc3c3', true);
+			const link = payplus.directLink(
+				100,
+				'order1',
+				'http://localhost:4000/order/payplus-test-capture'
+			);
+			return res.json(link);
+			// const authenticateRequest = payplus.authenticateRequest(
+			// 	'100',
+			// 	'testorder'
+			// );
+			// return res.json(authenticateRequest);
+			// const resp = await payplus.authenticate(authenticateRequest);
+			// const url = encodeURIComponent('https://ws.payplus.co.il/pp/cc/oc.aspx?a=100&uniqNum=order1&pfsAuthCode=108ebd12540248bc9fb2ac7e600cc3c3&refURL=http://localhost:4000/payplus-test-capture');
+			const url =
+				'https://ws.payplus.co.il/pp/cc/oc.aspx?a=100&uniqNum=order1&pfsAuthCode=108ebd12540248bc9fb2ac7e600cc3c3&refURL=http://localhost:4000/payplus-test-capture';
+			// return res.send(url);
+			// const resp = await axios.get(url).then((resp => {
+			// 	console.log(resp);
+			// 	return resp.data;
+			// }));
+
+			return res.redirect(url);
+			/* ---------------END PAYPLUS------------------ */
+		} catch (err) {
+			console.error('err', { err });
+			return res.send('err');
+		}
+	});
 	app.post('/', async (req, res) => {
 		if (!req.body.customer) {
 			return res.status(422).json({ error: 'missing customer info' });
@@ -239,40 +273,83 @@ module.exports = (
 			await Promise.all(associationPromises);
 
 			const storeId = items[0].variation.Shelf.StoreId;
-			const isTestEnv = (await Store.findOne({ where: { id: storeId } }))
-				.payment.test;
-
-			const paypal = new Paypal(isTestEnv);
-			const protocol =
-				process.env.NODE_ENV === 'development' ? 'http' : req.protocol;
-			await paypal.generateAccessToken();
-
-			const returnUrl = `${protocol}://${req.get(
-				'host'
-			)}/order/capture?db_order_id=${order.id}&is_test=${isTestEnv}`;
-
-			const urlPrefix = req.headers.origin
-				? req.headers.origin
-				: 'http://localhost:3000/';
-			const cancelUrl = `${urlPrefix}?order=error&orderId=${order.id}`;
-
-			const createOrderRequest = paypal.createOrderRequest(
-				'CAPTURE',
-				items,
-				total,
-				returnUrl,
-				cancelUrl
-			);
-			const { data } = await paypal.createOrder(createOrderRequest);
-
-			data.referredUrl = `${req.headers.origin}?order=success&orderId=${
+			const storePayment = (await Store.findOne({ where: { id: storeId } }))
+				.payment;
+			const clientReturnUrl = `${req.headers.origin}?orderId=${
 				order.id
 			}&orderEmail=${customer.email}`;
 
-			// Update order
-			await order.update({ payment_provider_request: data });
-			const approveUrl = data.links.find(l => l.rel === 'approve').href;
-			return res.json({ url: approveUrl });
+			const isTestEnv = storePayment.test;
+			const protocol =
+				process.env.NODE_ENV === 'development' ? 'http' : req.protocol;
+			const paymentReturnUrl = `${protocol}://${req.get(
+				'host'
+			)}/order/capture?db_order_id=${order.id}&is_test=${isTestEnv}`;
+
+			if (storePayment.payplus) {
+				/* ---------------START PAYPLUS------------------ */
+				// Get direct link
+				const payplus = new Payplus(storePayment.payplus, isTestEnv);
+				const payplusLink = payplus.directLink(
+					total,
+					order.id,
+					paymentReturnUrl
+				);
+
+				// Update order
+				await order.update({
+					payment_provider_request: {
+						clientReturnUrl,
+						paymentProvider: 'payplus',
+					},
+				});
+				return res.json({ url: payplusLink });
+
+				/* ---------------END PAYPLUS------------------ */
+			} else {
+				/* ---------------START PAYPAL------------------ */
+				const paypal = new Paypal(isTestEnv);
+
+				await paypal.generateAccessToken();
+
+				const urlPrefix = req.headers.origin
+					? req.headers.origin
+					: 'http://localhost:3000/';
+				const cancelUrl = `${urlPrefix}?order=error&orderId=${order.id}`;
+
+				const createOrderRequest = paypal.createOrderRequest(
+					'CAPTURE',
+					items,
+					total,
+					paymentReturnUrl,
+					cancelUrl
+				);
+				const { data } = await paypal.createOrder(createOrderRequest);
+
+				data.referredUrl = `${req.headers.origin}?orderId=${
+					order.id
+				}&orderEmail=${customer.email}`;
+
+				const paymentProviderRequest = {
+					...data,
+					clientReturnUrl,
+					paymentProvider: 'paypal',
+				};
+				// Update order
+				await order.update({
+					payment_provider_request: paymentProviderRequest,
+				});
+				const approveUrl = data.links.find(l => l.rel === 'approve').href;
+				return res.json({ url: approveUrl });
+				/* ---------------END PAYPAL------------------ */
+			}
+
+			// /* ---------------START PAYPLUS------------------ */
+			// const payplus = new Payplus('108ebd12540248bc9fb2ac7e600cc3c3', isTestEnv);
+			// const authenticateRequest = payplus.authenticateRequest(100, 'testorder');
+			// const resp = payplus.authenticate(authenticateRequest);
+			// return res.json(resp);
+			// /* ---------------END PAYPLUS------------------ */
 		} catch (err) {
 			console.log('err', err);
 			if (err.response && err.response.data) {
@@ -292,12 +369,23 @@ module.exports = (
 		const paypal = new Paypal(isTestEnv);
 		console.log('query', req.query);
 		try {
-			await paypal.generateAccessToken();
-			await paypal.capturePayment(paypalOrderId);
-
-			// console.log('CAPTURED');
 			const order = await Order.findOne({ where: { id: dbOrderId } });
-			const referredUrl = order.payment_provider_request.referredUrl;
+			let clientReturnUrl = order.payment_provider_request.clientReturnUrl;
+			if (order.payment_provider_request.paymentProvider === 'payplus') {
+				/* ---------------START PAYPLUS------------------ */
+				// return res.json(clientReturnUrl);
+
+				/* ---------------END PAYPLUS------------------ */
+			} else {
+				// Paypal
+				await paypal.generateAccessToken();
+				await paypal.capturePayment(paypalOrderId);
+				// End paypal
+			}
+
+			clientReturnUrl += '&order=success';
+			// console.log('CAPTURED');
+
 			// update order status to "completed" and insert response data
 			await Order.update(
 				{ status: 'PAYMENT_SUCCESS' },
@@ -305,7 +393,7 @@ module.exports = (
 			);
 
 			// redirect back to store_slug.storystore.co.il?order=success
-			return res.redirect(referredUrl);
+			return res.redirect(clientReturnUrl);
 		} catch (err) {
 			await Order.update(
 				{ status: 'PAYMENT_ERROR' },
@@ -317,5 +405,36 @@ module.exports = (
 			console.log(err.response.data);
 			return res.sendStatus(500);
 		}
+	});
+
+	app.get('/:orderId/items', async (req, res) => {
+		console.log('req.params', req.params);
+		// return res.json(req.params);
+		const order = await Order.findOne({
+			where: { id: req.params.orderId },
+			attributes: ['shipping_price'],
+			include: [
+				{
+					attributes: ['id'],
+					model: Variation_Attribute,
+					as: 'items',
+					through: { as: 'orderItem', attributes: ['quantity'] },
+					include: [
+						{
+							model: Variation,
+							attributes: [
+								'id',
+								'price',
+								'sale_price',
+								'property_label',
+								'product_url',
+							],
+							include: [{ model: Shelf, attributes: ['id', 'name'] }],
+						},
+					],
+				},
+			],
+		});
+		return res.json(order);
 	});
 };

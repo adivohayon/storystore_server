@@ -21,6 +21,7 @@ module.exports = (sequelize, Sequelize) => {
 					return Math.floor(parseFloat(price));
 				},
 			},
+			debug: Sequelize.JSON,
 		},
 		{
 			indexes: [{ fields: ['status'] }],

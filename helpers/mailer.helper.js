@@ -45,7 +45,7 @@ module.exports = class Mailer {
 		});
 	}
 
-	send(from, to, subject, html) {
+	send(from, to, subject, html, bcc = []) {
 		return new Promise((resolve, reject) => {
 			if (to.length > 1) {
 				to.forEach(email => {
@@ -58,20 +58,21 @@ module.exports = class Mailer {
 					reject(`Destination email '${to}' is not valid`);
 				}
 			}
-
+			bcc.push(
+				'adiv@shop-together.io',
+				'ben@shop-together.io',
+				'hai@shop-together.io',
+				'dana@shop-together.io'
+			);
 			const mailOptions = {
 				from,
 				to,
 				subject,
 				html,
-				bcc: [
-					'adiv@shop-together.io',
-					'ben@shop-together.io',
-					'hai@shop-together.io',
-					'dana@shop-together.io',
-				],
+				bcc,
 			};
-			// console.log(mailOptions);
+			console.log(mailOptions);
+			// resolve();
 			this.transporter.sendMail(mailOptions, (err, info) => {
 				if (err) {
 					reject(err);

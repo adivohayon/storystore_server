@@ -2,7 +2,7 @@
 
 const _ = require('lodash');
 const axios = require('axios');
-const ICredit = require('./../payment-providers/i-credit.provider');
+
 const YaadPay = require('./../payment-providers/yaadpay.provider');
 const Paypal = require('./../payment-providers/paypal.provider');
 const Payplus = require('./../payment-providers/payplus.provider');
@@ -63,7 +63,7 @@ module.exports = (
 									include: [
 										{
 											model: Store,
-											attributes: ['id', 'slug', 'name', 'tagline', 'info'],
+											attributes: ['id', 'slug', 'name', 'tagline', 'info', 'settings'],
 										},
 									],
 								},
@@ -82,8 +82,17 @@ module.exports = (
 		// GET FIRST STORE
 		const store = order.items[0].variation.Shelf.Store;
 
+		const mailer = new Mailer();
+
+		const bcc = [];
+		if (store.settings.sendEmail && store.info.email && mailer.validateEmail(store.info.email)) {
+			bcc.push(store.info.email);
+		}
+
 		// const to = [customerEmail, store.info.email];
-		const to = [customerEmail, 'adiv@shop-together.io'];
+		// const bcc = 
+		// return res.json(bcc);
+		const to = [customerEmail];
 
 		// From address
 		const from = `"${store.name}" <noreply@storystore.co.il>`;
@@ -128,7 +137,7 @@ module.exports = (
 		const subject = `ההזמנה מ-${store.name} בדרך אליך`;
 		const orderNumber = createOrderId('6700', order.id);
 
-		const mailer = new Mailer();
+		
 		const view = mailer.getTemplate('new-order');
 
 		// console.log(emailItems);
@@ -153,7 +162,7 @@ module.exports = (
 					}
 
 					// return res.send(html);
-					const mailResp = await mailer.send(from, to, subject, html);
+					const mailResp = await mailer.send(from, to, subject, html, bcc);
 					// console.log('mailResp', mailResp);
 					return res.send(200);
 				} catch (err) {
@@ -205,7 +214,8 @@ module.exports = (
 		}
 
 		const shipping = req.body.shipping;
-		if (!shipping || shipping.price < 0) {
+		console.log('shipping', shipping);
+		if (!shipping || !shipping.price || shipping.price < 0) {
 			return res
 				.status(422)
 				.json({ error: 'Shipping price does not exist or is negative' });
@@ -273,8 +283,13 @@ module.exports = (
 			await Promise.all(associationPromises);
 
 			const storeId = items[0].variation.Shelf.StoreId;
-			const storePayment = (await Store.findOne({ where: { id: storeId } }))
-				.payment;
+			const { slug: storeSlug, payment: storePayment } = await Store.findOne({
+				where: { id: storeId },
+				attributes: ['slug', 'payment'],
+			});
+			// return res.json({ storePayment, storeSlug });
+			// const storePayment = (await Store.findOne({ where: { id: storeId } }))
+			// 	.payment;
 			const clientReturnUrl = `${req.headers.origin}?orderId=${
 				order.id
 			}&orderEmail=${customer.email}`;
@@ -306,6 +321,36 @@ module.exports = (
 				return res.json({ url: payplusLink });
 
 				/* ---------------END PAYPLUS------------------ */
+			} else if (storePayment.iCredit) {
+				const ICredit = require('./../payment-providers/i-credit.provider');
+				const iCredit = new ICredit(storePayment.iCredit, isTestEnv);
+
+				iCredit.ipnUrls = {
+					success: `https://${req.get('host')}/order/${storeSlug}/ipn/${
+						order.id
+					}`,
+					failure: `https://${req.get('host')}/order/${storeSlug}/ipn/${
+						order.id
+					}?error=1`,
+				};
+				const getUrlRequest = iCredit.GetUrlRequest(
+					items,
+					quantitiesMap,
+					order.id,
+					shipping,
+					paymentReturnUrl,
+					customer
+				);
+				const { data } = await iCredit.getUrl(getUrlRequest);
+				await order.update({
+					payment_provider_request: {
+						...data,
+						clientReturnUrl,
+						paymentProvider: 'iCredit',
+					},
+				});
+				// console.log('iCreditLink', data);
+				return res.json({ url: data.URL });
 			} else {
 				/* ---------------START PAYPAL------------------ */
 				const paypal = new Paypal(isTestEnv);
@@ -360,24 +405,32 @@ module.exports = (
 	});
 
 	app.get('/capture', async (req, res) => {
-		const {
-			token: paypalOrderId,
-			db_order_id: dbOrderId,
-			is_test: isTestEnvStr,
-		} = req.query;
+		const { db_order_id: dbOrderId, is_test: isTestEnvStr } = req.query;
 		const isTestEnv = isTestEnvStr === 'true';
-		const paypal = new Paypal(isTestEnv);
+
 		console.log('query', req.query);
 		try {
 			const order = await Order.findOne({ where: { id: dbOrderId } });
-			let clientReturnUrl = order.payment_provider_request.clientReturnUrl;
-			if (order.payment_provider_request.paymentProvider === 'payplus') {
+			let { clientReturnUrl, paymentProvider } = order.payment_provider_request;
+			if (paymentProvider === 'payplus') {
 				/* ---------------START PAYPLUS------------------ */
 				// return res.json(clientReturnUrl);
-
 				/* ---------------END PAYPLUS------------------ */
+			} else if (paymentProvider === 'iCredit') {
+				const token = req.query.Token;
+				if (!order.payment_provider_request.PublicSaleToken || !token) {
+					throw new Error('No public sale token saved for this order');
+				}
+
+				if (order.payment_provider_request.PublicSaleToken !== token) {
+					throw new Error(
+						'Mismatch between public token saved and the one received from payment provider'
+					);
+				}
 			} else {
 				// Paypal
+				const token = req.query.paypalOrderId;
+				const paypal = new Paypal(isTestEnv);
 				await paypal.generateAccessToken();
 				await paypal.capturePayment(paypalOrderId);
 				// End paypal
@@ -387,23 +440,36 @@ module.exports = (
 			// console.log('CAPTURED');
 
 			// update order status to "completed" and insert response data
-			await Order.update(
-				{ status: 'PAYMENT_SUCCESS' },
-				{ where: { id: dbOrderId } }
-			);
+			order.status = 'PAYMENT_SUCCESS';
+			await order.save();
+			// await Order.update(
+			// 	{ status: 'PAYMENT_SUCCESS' },
+			// 	{ where: { id: dbOrderId } }
+			// );
 
 			// redirect back to store_slug.storystore.co.il?order=success
+			// return res.json(clientReturnUrl);
 			return res.redirect(clientReturnUrl);
 		} catch (err) {
-			await Order.update(
-				{ status: 'PAYMENT_ERROR' },
-				{ where: { id: dbOrderId } }
-			);
+			console.log('err', err.toString());
+			const order = (await Order.update(
+				{
+					status: 'PAYMENT_ERROR',
+					debug: err.toString(),
+				},
+				{ where: { id: dbOrderId }, returning: true }
+			))[1][0];
+
 			if (err && err.response && err.response.status === 422) {
 				return res.json(err.response.data);
 			}
-			console.log(err.response.data);
-			return res.sendStatus(500);
+
+			// return res.json(order);
+			let clientReturnUrl = _.get(order, 'payment_provider_request.clientReturnUrl', null);
+			clientReturnUrl += '&order=error';
+			// console.log(err.response.data);
+			return res.redirect(clientReturnUrl);
+			// return res.sendStatus(500);
 		}
 	});
 

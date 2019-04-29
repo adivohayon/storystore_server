@@ -18,6 +18,7 @@ module.exports = (sequelize, Sequelize) => {
 			payment: Sequelize.JSON,
 			returns: Sequelize.TEXT,
 			shipping_details: Sequelize.TEXT,
+			settings: Sequelize.JSON,
 			// coupon_code: Sequelize.STRING,
 		},
 		{}

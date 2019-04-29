@@ -6,79 +6,95 @@ module.exports = class ICredit {
 	// GroupPrivateToken;
 	// storeSlug;
 	// order;
-	constructor(groupPrivateToken, isTest, storeSlug, order, orderNumber) {
+	constructor(groupPrivateToken, isTest, orderId) {
 		this.GroupPrivateToken = groupPrivateToken;
 		this.API_URL = isTest
 			? 'https://testicredit.rivhit.co.il/API/PaymentPageRequest.svc/'
 			: 'https://icredit.rivhit.co.il/API/PaymentPageRequest.svc/';
-		this.storeSlug = storeSlug;
-		this.order = order;
-		this.orderNumber = orderNumber;
-	}
-
-	getIPNUrls(hostname) {
-		return {
-			success: `https://${hostname}/order/${this.storeSlug}/ipn/${
-				this.order.id
-			}`,
-			failure: `https://${hostname}/order/${this.storeSlug}/ipn/${
-				this.order.id
-			}?error=1`,
+		// this.storeSlug = storeSlug;
+		// this.order = order;
+		this.orderId = orderId;
+		this.ipnUrls = {
+			success: null,
+			failure: null,
 		};
 	}
+	// get ipnUrls() {
+	// 	return this.ipnUrlsObj;
+	// }
+	// set ipnUrls(hostname, storeSlug) {
+	// 	this.ipnUrlsObj = {
+	// 		success: `https://${hostname}/order/${storeSlug}/ipn/${
+	// 			this.orderId
+	// 		}`,
+	// 		failure: `https://${hostname}/order/${storeSlug}/ipn/${
+	// 			this.orderId
+	// 		}?error=1`,
+	// 	};
+	// }
+	// setIPNUrls(hostname) {
+	// 	this.ipnUrls = {
+	// 		success: `https://${hostname}/order/${this.storeSlug}/ipn/${
+	// 			this.order.id
+	// 		}`,
+	// 		failure: `https://${hostname}/order/${this.storeSlug}/ipn/${
+	// 			this.order.id
+	// 		}?error=1`,
+	// 	};
+	// }
 
-	GetUrlRequest(referer, ipnUrls, items, quantities, shippingCost) {
-		const clientEmail = _.get(this.order, 'personal.email');
-		const redirectQuery = `/?order=success&orderNumber=${this.orderNumber}&orderEmail=${clientEmail}`;
+	GetUrlRequest(
+		items,
+		quantitiesMap,
+		orderId,
+		shipping,
+		paymentReturnUrl,
+		customer
+	) {
 		const iCreditGetUrlRequest = {
 			GroupPrivateToken: this.GroupPrivateToken,
 			Currency: 1,
 			HideItemList: true,
-			RedirectURL: String(new URL(redirectQuery, referer)),
-			FailRedirectURL: String(new URL('/?order=error', referer)),
+			RedirectURL: paymentReturnUrl,
+			FailRedirectURL: `${paymentReturnUrl}&error=true`,
 
-			IPNURL: ipnUrls.success,
-			IPNFailureURL: ipnUrls.failure,
-			CustomerFirstName: _.get(this.order, 'personal.firstName', 'unknown'),
-			CustomerLastName: _.get(this.order, 'personal.lastName', 'unknown'),
-			Address: _.get(this.order, 'address.street'),
-			POB: _.get(this.order, 'address.pob', 0),
-			City: _.get(this.order, 'address.city'),
+			IPNURL: this.ipnUrls.success,
+			IPNFailureURL: this.ipnUrls.failure,
+			CustomerFirstName: _.get(customer, 'first_name', 'unknown'),
+			CustomerLastName: _.get(customer, 'last_name', 'unknown'),
+			Address: customer.shipping_address,
+			// POB: _.get(this.customer, 'address.pob', 0),
+			City: customer.shipping_city,
 			Country: 'ישראל',
 			// Zipcode: _.get(this.order, 'address.zipCode'),
-			PhoneNumber: _.get(this.order, 'personal.phone'),
-			EmailAddress: clientEmail,
-			Order: this.orderNumber,
+			PhoneNumber: customer.phone,
+			EmailAddress: customer.email,
+			Order: orderId,
 			Custom1: 'storystore',
 			SendMail: true,
 			Items: items.map(item => {
 				if (item.id !== -1) {
-					let description = item.Shelf.name;
-					for (let attr in item.attrs) {
-						if (
-							item.attrs.hasOwnProperty(attr) &&
-							item.attrs[attr].label &&
-							item.attrs[attr].label.length > 0
-						) {
-							description += ` | ${item.attrs[attr].label}`;
-						}
-					}
+					let description = item.variation.Shelf.name;
+					if (item.variation.property_label)
+						description += ' - ' + item.variation.property_label;
+					if (item.attribute.label) description += ' - ' + item.attribute.label;
+
 					return {
-						Quantity: quantities[String(item.id)],
-						UnitPrice: Number(item.sale_price) || Number(item.price) || 0,
+						Quantity: quantitiesMap[String(item.id)],
+						UnitPrice: item.variation.finalPrice,
 						Description: description,
-						CatalogNumber: item.sku,
+						CatalogNumber: item.id,
 					};
-				} 
+				}
 			}),
 		};
 
 		// console.log('SHIPPING COST', shippingCost);
-		if (shippingCost > 0) {
+		if (shipping.price > 0) {
 			iCreditGetUrlRequest.Items.push({
 				Quantity: 1,
-				UnitPrice: shippingCost,
-				Description: 'דמי משלוח',
+				UnitPrice: shipping.price,
+				Description: shipping.type || 'דמי משלוח',
 			});
 		}
 

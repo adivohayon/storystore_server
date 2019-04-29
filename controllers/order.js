@@ -96,13 +96,22 @@ module.exports = (
 
 		// From address
 		const from = `"${store.name}" <noreply@storystore.co.il>`;
-
+		
+		
 		const emailItems = order.items.map(item => {
+			let attributes = '';
+
+			if (item.variation.property_label) {
+				attributes += item.variation.property_label;
+			}
+
+			if (item.attribute.label) {
+				attributes += ' - ' + item.attribute.label;
+			}
+
 			return {
 				name: item.variation.Shelf.name,
-				attributes: `${item.variation.property_label} - ${
-					item.attribute.label
-				}`,
+				attributes,
 				price: item.variation.finalPrice,
 				qty: item.orderItem.quantity,
 				id: item.id,
@@ -215,7 +224,7 @@ module.exports = (
 
 		const shipping = req.body.shipping;
 		console.log('shipping', shipping);
-		if (!shipping || !shipping.price || shipping.price < 0) {
+		if (!shipping || shipping.price < 0) {
 			return res
 				.status(422)
 				.json({ error: 'Shipping price does not exist or is negative' });

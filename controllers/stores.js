@@ -57,7 +57,17 @@ module.exports = (
 		const limit = Number(req.query.limit) || 5;
 		const offset = Number(req.query.offset) || 0;
 		const shelves = await Shelf.findAll({
-			attributes: ['id', 'slug', 'name', 'description', 'info', 'shelf_order'],
+			attributes: [
+				'id',
+				'slug',
+				'name',
+				'description',
+				'info',
+				'shelf_order',
+				'type',
+				'cta_text',
+				'data',
+			],
 			where: { StoreId: req.params.storeId },
 			// order: [['shelf_order', 'ASC']],
 			as: 'Shelf',

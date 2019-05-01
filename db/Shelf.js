@@ -8,6 +8,9 @@ module.exports = (sequelize, Sequelize) => {
 			name: Sequelize.STRING,
 			description: Sequelize.TEXT,
 			info: Sequelize.TEXT,
+			type: { type: Sequelize.STRING, defaultValue: 'SHOPPABLE' },
+			cta_text: { type: Sequelize.STRING, defaultValue: 'הוספה לסל' },
+			data: { type: Sequelize.JSON },
 			shelf_order: Sequelize.INTEGER,
 		},
 		{

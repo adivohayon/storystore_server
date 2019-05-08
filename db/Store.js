@@ -18,7 +18,15 @@ module.exports = (sequelize, Sequelize) => {
 			payment: Sequelize.JSON,
 			returns: Sequelize.TEXT,
 			shipping_details: Sequelize.TEXT,
-			settings: Sequelize.JSON,
+			settings: {
+				type: Sequelize.JSON,
+				defaultValue: {
+					hasCart: true,
+					primaryColor: '#000000',
+					sendEmail: false,
+					showSeeMore: true,
+				},
+			},
 			// coupon_code: Sequelize.STRING,
 		},
 		{}

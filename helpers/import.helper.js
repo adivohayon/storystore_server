@@ -131,8 +131,14 @@ module.exports = class Import {
 					description,
 					info,
 					shelf_order,
+					type,
+					cta_text,
+					data,
 				} of shelves) {
 					// Find or create shelf
+					// console.log('data', data);
+					// const parsed = JSON.parse(data);
+					// console.log('parsed', parsed);
 					const [shelf] = await this.Models.Shelf.findCreateFind({
 						where: { slug: shelfSlug, StoreId: this.storeId },
 						defaults: {
@@ -141,6 +147,9 @@ module.exports = class Import {
 							name: name.trim(),
 							description: description.trim(),
 							info: info.trim(),
+							type,
+							cta_text,
+							data: JSON.parse(data),
 						},
 					});
 
@@ -176,7 +185,7 @@ module.exports = class Import {
 							})
 							.map(key => key.split('/').pop());
 
-						console.log('itemPropertyId', itemPropertyId);
+						// console.log('shelf', shelf);
 						// Push create variation promise
 						dbVariationPromises.push(
 							this.Models.Variation.findCreateFind({

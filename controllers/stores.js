@@ -90,10 +90,10 @@ module.exports = (
 						'variation_order',
 						'ShelfId',
 					],
-					where: sequelize.where(
-						sequelize.fn('array_length', sequelize.col('assets'), 1),
-						{ [sequelize.Op.gt]: 0 }
-					),
+					// where: sequelize.where(
+					// 	sequelize.fn('array_length', sequelize.col('assets'), 1),
+					// 	{ [sequelize.Op.gt]: 0 }
+					// ),
 					include: [
 						{
 							model: Attribute,

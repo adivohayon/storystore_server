@@ -26,7 +26,7 @@ const getS3Object = (bucket, path) => {
 };
 module.exports = (
 	app,
-	{ sequelize, Store, Shelf, Variation, Attribute, Item_Property }
+	{ sequelize, Store, Shelf, Variation, Attribute, Item_Property, Category }
 ) => {
 	app.get('/', async (req, res) => {
 		res.json(await Store.findAll());
@@ -50,6 +50,73 @@ module.exports = (
 				where: { slug: req.params.store },
 			})
 		);
+	});
+
+	app.get('/:storeId/categories/:category_slug', async (req, res) => {
+		try {
+			if (!req.params.category_slug) {
+				throw new Error('No category slug provided');
+			}
+
+			const shelfInclude = [
+				{
+					model: Shelf,
+					as: 'shelves',
+					include: [
+						{
+							model: Variation,
+							as: 'variations',
+							attributes: [
+								['id', 'variationId'],
+								'slug',
+								'price',
+								'sale_price',
+								'currency',
+								'property_label',
+								'property_value',
+								'assets',
+								'variation_order',
+								'ShelfId',
+							],
+							include: [
+								{
+									model: Attribute,
+									as: 'attributes',
+									attributes: ['label', 'value'],
+									include: [
+										{
+											model: Item_Property,
+											as: 'itemProperty',
+											attributes: ['type', 'label'],
+										},
+									],
+									through: { attributes: ['id'], as: 'variationAttribute' },
+								},
+								{
+									model: Item_Property,
+									as: 'itemProperty',
+									attributes: ['type', 'label'],
+								},
+							],
+						},
+					],
+				},
+			];
+
+			const rootCategory = await Category.findOne({
+				where: { slug: req.params.category_slug },
+				include: shelfInclude,
+			});
+			// retyrb res.json(rootCategory);
+
+			const subcategories = await Category.findAll({
+				where: { parent_id: rootCategory.id },
+				include: shelfInclude,
+			});
+			return res.json([rootCategory, ...subcategories]);
+		} catch (err) {
+			console.error(err);
+		}
 	});
 
 	app.get('/:storeId/shelves', async (req, res) => {

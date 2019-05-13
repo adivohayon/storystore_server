@@ -18,8 +18,16 @@ module.exports = (sequelize, Sequelize) => {
 		}
 	);
 
-	model.associate = function({ Store, Variation }) {
+	model.associate = function({ Store, Variation, Category }) {
 		this.belongsTo(Store);
 		this.hasMany(Variation, { as: 'variations', onDelete: 'CASCADE' });
+		this.belongsToMany(Category, {
+			// as: 'items',
+			through: {
+				model: 'Category_Shelf',
+				unique: false,
+			},
+			foreignKey: 'shelf_id',
+		});
 	};
 };

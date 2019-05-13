@@ -139,6 +139,7 @@ module.exports = class Import {
 					// console.log('data', data);
 					// const parsed = JSON.parse(data);
 					// console.log('parsed', parsed);
+					const ctaData = data ? JSON.parse(data) : {};
 					const [shelf] = await this.Models.Shelf.findCreateFind({
 						where: { slug: shelfSlug, StoreId: this.storeId },
 						defaults: {
@@ -149,7 +150,7 @@ module.exports = class Import {
 							info: info.trim(),
 							type,
 							cta_text,
-							data: JSON.parse(data),
+							data: ctaData,
 						},
 					});
 

@@ -1,7 +1,10 @@
 'use strict';
 const aws = require('aws-sdk');
 const s3 = new aws.S3(); // Pass in opts to S3 if necessary
+const _ = require('lodash');
+// TODO:  move to model
 
+// TODO: move to helper
 const getS3Object = (bucket, path) => {
 	return new Promise((resolve, reject) => {
 		const getParams = {
@@ -24,9 +27,20 @@ const getS3Object = (bucket, path) => {
 		});
 	});
 };
+
+// TODO: refactor and abstract reusable code
 module.exports = (
 	app,
-	{ sequelize, Store, Shelf, Variation, Attribute, Item_Property, Category }
+	{
+		sequelize,
+		Store,
+		Shelf,
+		Variation,
+		Attribute,
+		Item_Property,
+		Category,
+		Influencer,
+	}
 ) => {
 	app.get('/', async (req, res) => {
 		res.json(await Store.findAll());
@@ -50,6 +64,81 @@ module.exports = (
 				where: { slug: req.params.store },
 			})
 		);
+	});
+
+	app.get('/:storeId/influencers/:influencer_slug', async (req, res) => {
+		try {
+			if (!req.params.storeId || isNaN(req.params.storeId)) {
+				throw new Error('No valid storeId provided');
+			}
+			// if (_.isNumber(req.params.storeId))
+
+			if (!req.params.influencer_slug) {
+				throw new Error('No influencer slug provided');
+			}
+
+			const shelfInclude = [
+				{
+					model: Shelf,
+					as: 'shelves',
+					include: [
+						{
+							model: Variation,
+							as: 'variations',
+							attributes: [
+								['id', 'variationId'],
+								'slug',
+								'price',
+								'sale_price',
+								'currency',
+								'property_label',
+								'property_value',
+								'assets',
+								'variation_order',
+								'ShelfId',
+							],
+							include: [
+								{
+									model: Attribute,
+									as: 'attributes',
+									attributes: ['label', 'value'],
+									include: [
+										{
+											model: Item_Property,
+											as: 'itemProperty',
+											attributes: ['type', 'label'],
+										},
+									],
+									through: { attributes: ['id'], as: 'variationAttribute' },
+								},
+								{
+									model: Item_Property,
+									as: 'itemProperty',
+									attributes: ['type', 'label'],
+								},
+							],
+						},
+					],
+				},
+			];
+
+			const influencer = await Influencer.findOne({
+				attributes: ['id', 'slug', 'name'],
+				where: {
+					slug: req.params.influencer_slug,
+					StoreId: req.params.storeId,
+				},
+				include: shelfInclude,
+			});
+			if (!influencer) {
+				return res.status(404).send('Influencer not found');
+			}
+
+			return res.json(influencer);
+		} catch (err) {
+			console.error(err);
+			return res.status(422).send(err.toString());
+		}
 	});
 
 	app.get('/:storeId/categories/:category_slug', async (req, res) => {
@@ -198,59 +287,7 @@ module.exports = (
 		}
 		return res.json({ shelves, pagination });
 	});
-	/*
-		include: [
-			{
-						// order: [['shelves', 'shelf_order', 'ASC']],
-						model: Shelf,
-						as: 'shelves',
-						limit: Number(req.body.limit) || 5,
-						// offset: Number(req.body.offset) || 0,
-						include: [
-							{
-								model: Variation,
-								as: 'variations',
-								attributes: [
-									['id', 'variationId'],
-									'slug',
-									'price',
-									'sale_price',
-									'currency',
-									'property_label',
-									'property_value',
-									'assets',
-									'variation_order',
-									'ShelfId',
-								],
-								where: sequelize.where(
-									sequelize.fn('array_length', sequelize.col('assets'), 1),
-									{ [sequelize.Op.gt]: 0 }
-								),
-								include: [
-									{
-										model: Attribute,
-										as: 'attributes',
-										attributes: ['label', 'value'],
-										include: [
-											{
-												model: Item_Property,
-												as: 'itemProperty',
-												attributes: ['type', 'label'],
-											},
-										],
-										through: { attributes: ['id'], as: 'variationAttribute'},
-									},
-									{
-										model: Item_Property,
-										as: 'itemProperty',
-										attributes: ['type', 'label'],
-									},
-								],
-							},
-						],
-					},
-				],
-*/
+
 	app.get('/:store/texts', async (req, res) => {
 		const policy = await getS3Object(
 			'storystore-api',

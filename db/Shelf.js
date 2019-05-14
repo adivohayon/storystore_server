@@ -18,13 +18,20 @@ module.exports = (sequelize, Sequelize) => {
 		}
 	);
 
-	model.associate = function({ Store, Variation, Category }) {
+	model.associate = function({ Store, Variation, Category, Influencer }) {
 		this.belongsTo(Store);
 		this.hasMany(Variation, { as: 'variations', onDelete: 'CASCADE' });
 		this.belongsToMany(Category, {
-			// as: 'items',
 			through: {
 				model: 'Category_Shelf',
+				unique: false,
+			},
+			foreignKey: 'shelf_id',
+		});
+
+		this.belongsToMany(Influencer, {
+			through: {
+				model: 'Influencer_Shelf',
 				unique: false,
 			},
 			foreignKey: 'shelf_id',

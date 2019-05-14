@@ -23,6 +23,7 @@ module.exports = (sequelize, Sequelize) => {
 				defaultValue: {
 					hasCart: true,
 					primaryColor: '#000000',
+					ctaColor: '#ffffff',
 					sendEmail: false,
 					showSeeMore: true,
 				},

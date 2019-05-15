@@ -71,7 +71,7 @@ module.exports = class Mailer {
 				html,
 				bcc,
 			};
-			console.log(mailOptions);
+			// console.log(mailOptions);
 			// resolve();
 			this.transporter.sendMail(mailOptions, (err, info) => {
 				if (err) {

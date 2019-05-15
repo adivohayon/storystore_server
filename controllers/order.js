@@ -63,7 +63,14 @@ module.exports = (
 									include: [
 										{
 											model: Store,
-											attributes: ['id', 'slug', 'name', 'tagline', 'info', 'settings'],
+											attributes: [
+												'id',
+												'slug',
+												'name',
+												'tagline',
+												'info',
+												'settings',
+											],
 										},
 									],
 								},
@@ -85,19 +92,22 @@ module.exports = (
 		const mailer = new Mailer();
 
 		const bcc = [];
-		if (store.settings.sendEmail && store.info.email && mailer.validateEmail(store.info.email)) {
+		if (
+			store.settings.sendEmail &&
+			store.info.email &&
+			mailer.validateEmail(store.info.email)
+		) {
 			bcc.push(store.info.email);
 		}
 
 		// const to = [customerEmail, store.info.email];
-		// const bcc = 
+		// const bcc =
 		// return res.json(bcc);
 		const to = [customerEmail];
 
 		// From address
 		const from = `"${store.name}" <noreply@storystore.co.il>`;
-		
-		
+
 		const emailItems = order.items.map(item => {
 			let attributes = '';
 
@@ -146,7 +156,6 @@ module.exports = (
 		const subject = `ההזמנה מ-${store.name} בדרך אליך`;
 		const orderNumber = createOrderId('6700', order.id);
 
-		
 		const view = mailer.getTemplate('new-order');
 
 		// console.log(emailItems);
@@ -310,8 +319,8 @@ module.exports = (
 				'host'
 			)}/order/capture?db_order_id=${order.id}&is_test=${isTestEnv}`;
 
+			/* ---------------START PAYPLUS------------------ */
 			if (storePayment.payplus) {
-				/* ---------------START PAYPLUS------------------ */
 				// Get direct link
 				const payplus = new Payplus(storePayment.payplus, isTestEnv);
 				const payplusLink = payplus.directLink(
@@ -331,6 +340,7 @@ module.exports = (
 
 				/* ---------------END PAYPLUS------------------ */
 			} else if (storePayment.iCredit) {
+			/* ---------------START ICREDIT------------------ */
 				const ICredit = require('./../payment-providers/i-credit.provider');
 				const iCredit = new ICredit(storePayment.iCredit, isTestEnv);
 
@@ -360,6 +370,32 @@ module.exports = (
 				});
 				// console.log('iCreditLink', data);
 				return res.json({ url: data.URL });
+			} else if (storePayment.pelecard) {
+			/* ---------------END PAYPLUS------------------ */
+				/* ---------------START PELECARD------------------ */
+				const Pelecard = require('./../payment-providers/pelecard.provider');
+				const pelecard = new Pelecard(storePayment.iCredit, '', isTestEnv);
+				const initRequest = pelecard.InitRequest(paymentReturnUrl, total);
+
+				// return res.json(initRequest);
+				// return res.json(initRequest);
+				const { data } = await pelecard.Init(initRequest);
+				if (data.Error && data.Error.ErrCode !== 0) {
+					return res.status(422).json(data.Error);
+				}
+				// return res.json(data);
+
+				await order.update({
+					payment_provider_request: {
+						...data,
+						clientReturnUrl,
+						paymentProvider: 'pelecard',
+					},
+				});
+				// console.log('iCreditLink', data);
+				return res.json({ url: data.URL });
+
+				/* ---------------END PELECARD------------------ */
 			} else {
 				/* ---------------START PAYPAL------------------ */
 				const paypal = new Paypal(isTestEnv);
@@ -436,6 +472,8 @@ module.exports = (
 						'Mismatch between public token saved and the one received from payment provider'
 					);
 				}
+			} else if (paymentProvider === 'pelecard') {
+				
 			} else {
 				// Paypal
 				const token = req.query.paypalOrderId;
@@ -474,7 +512,11 @@ module.exports = (
 			}
 
 			// return res.json(order);
-			let clientReturnUrl = _.get(order, 'payment_provider_request.clientReturnUrl', null);
+			let clientReturnUrl = _.get(
+				order,
+				'payment_provider_request.clientReturnUrl',
+				null
+			);
 			clientReturnUrl += '&order=error';
 			// console.log(err.response.data);
 			return res.redirect(clientReturnUrl);

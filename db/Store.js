@@ -28,6 +28,7 @@ module.exports = (sequelize, Sequelize) => {
 					showSeeMore: true,
 				},
 			},
+			desktop_url: Sequelize.STRING,
 			// coupon_code: Sequelize.STRING,
 		},
 		{}

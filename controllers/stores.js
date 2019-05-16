@@ -60,6 +60,7 @@ module.exports = (
 					'returns',
 					'shipping_details',
 					'settings',
+					'desktop_url',
 				],
 				where: { slug: req.params.store },
 			})

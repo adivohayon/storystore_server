@@ -9,6 +9,7 @@ const Payplus = require('./../payment-providers/payplus.provider');
 const Mailer = require('./../helpers/mailer.helper');
 const util = require('util');
 const FormatDate = require('date-fns/format');
+const DefaultConnector = require('./../connectors/default.connector');
 // const axios = require('axios');
 const createOrderId = (prefix, orderId) => {
 	return prefix + orderId;
@@ -191,261 +192,68 @@ module.exports = (
 		);
 	});
 
-	app.get('/payplus-test', async (req, res) => {
-		try {
-			/* ---------------START PAYPLUS------------------ */
-			const payplus = new Payplus('108ebd12540248bc9fb2ac7e600cc3c3', true);
-			const link = payplus.directLink(
-				100,
-				'order1',
-				'http://localhost:4000/order/payplus-test-capture'
-			);
-			return res.json(link);
-			// const authenticateRequest = payplus.authenticateRequest(
-			// 	'100',
-			// 	'testorder'
-			// );
-			// return res.json(authenticateRequest);
-			// const resp = await payplus.authenticate(authenticateRequest);
-			// const url = encodeURIComponent('https://ws.payplus.co.il/pp/cc/oc.aspx?a=100&uniqNum=order1&pfsAuthCode=108ebd12540248bc9fb2ac7e600cc3c3&refURL=http://localhost:4000/payplus-test-capture');
-			const url =
-				'https://ws.payplus.co.il/pp/cc/oc.aspx?a=100&uniqNum=order1&pfsAuthCode=108ebd12540248bc9fb2ac7e600cc3c3&refURL=http://localhost:4000/payplus-test-capture';
-			// return res.send(url);
-			// const resp = await axios.get(url).then((resp => {
-			// 	console.log(resp);
-			// 	return resp.data;
-			// }));
-
-			return res.redirect(url);
-			/* ---------------END PAYPLUS------------------ */
-		} catch (err) {
-			console.error('err', { err });
-			return res.send('err');
-		}
-	});
 	app.post('/', async (req, res) => {
-		if (!req.body.customer) {
-			return res.status(422).json({ error: 'missing customer info' });
-		}
-		if (!req.body.items || !req.body.items.length) {
-			return res.status(422).json({ error: 'missing items' });
+		const clientBaseUrl = req.headers.origin;
+		const protocol =
+			process.env.NODE_ENV === 'development' ? 'http' : req.protocol;
+		const serverBaseUrl = `${protocol}://${req.get('host')}`;
+
+		// const connector = new DefaultConnector(
+		// 	clientBaseUrl,
+		// 	serverBaseUrl,
+		// 	Store,
+		// 	Shelf,
+		// 	Variation,
+		// 	Attribute,
+		// 	Variation_Attribute,
+		// 	Customer,
+		// 	Order,
+		// 	Sequelize
+		// );
+
+		const woocommerceAPIUrl = 'http://localhost:8080/wp-json/';
+		const connector = new WoocommerceConnector(woocommerceAPIUrl);
+
+
+		if (!connector.validateRequestCustomer(req.body.customer)) {
+			throw new Error('Invalid customer format');
 		}
 
-		const shipping = req.body.shipping;
-		console.log('shipping', shipping);
-		if (!shipping || shipping.price < 0) {
-			return res
-				.status(422)
-				.json({ error: 'Shipping price does not exist or is negative' });
+		if (!connector.validateRequestItems(req.body.items)) {
+			throw new Error('Invalid request items format');
+		}
+
+		if (!connector.validateShipping(req.body.shipping)) {
+			throw new Error('Invalid shipping option');
 		}
 
 		try {
-			const quantitiesMap = {};
-			const allVariationAttributeIds = [];
-			for (const item of req.body.items) {
-				for (const variationAttributeId of item.variationAttributeIds) {
-					quantitiesMap[String(variationAttributeId)] = item.qty;
-					allVariationAttributeIds.push(variationAttributeId);
-				}
-			}
-			const variationAttributeIds = [...new Set(allVariationAttributeIds)];
+			const {
+				order,
+				items,
+				storeId,
+				storeSlug,
+				storePayment,
+				customer,
+			} = await connector.newOrder(
+				req.body.items,
+				req.body.customer,
+				req.body.shipping
+			);
+			
+			//console.log('storePayment', storePayment);
+			const paymentUrl = await connector.handlePayment(
+				storePayment,
+				order,
+				items,
+				customer,
+				storeSlug
+			);
 
-			// Get items
-			const items = await Variation_Attribute.findAll({
-				attributes: ['id'],
-				where: {
-					id: {
-						[Sequelize.Op.in]: variationAttributeIds,
-					},
-				},
-				include: [
-					{ model: Attribute, attributes: ['label'] },
-					{ model: Variation, include: [{ model: Shelf }] },
-				],
-			});
-			// return res.json(items);
-			// No items error
-			if (items.length < 1) {
-				return res
-					.status(404)
-					.json({ error: 'items were not found in database' });
-			}
-
-			let total = items.reduce((total, v) => {
-				return (
-					total + Number(v.variation.finalPrice) * quantitiesMap[String(v.id)]
-				);
-			}, 0);
-
-			if (shipping && shipping.price && shipping.price > 0) {
-				total += shipping.price;
-			}
-
-			const customer = await Customer.create(req.body.customer);
-			const order = await Order.create({
-				total,
-				shipping_type: shipping.type,
-				shipping_price: shipping.price,
-				customerId: customer.id,
-			});
-			const associationPromises = [];
-			for (let item of items) {
-				associationPromises.push(
-					order.setItems(item, {
-						through: {
-							quantity: quantitiesMap[String(item.id)],
-						},
-					})
-				);
-			}
-			await Promise.all(associationPromises);
-
-			const storeId = items[0].variation.Shelf.StoreId;
-			const { slug: storeSlug, payment: storePayment } = await Store.findOne({
-				where: { id: storeId },
-				attributes: ['slug', 'payment'],
-			});
-			// return res.json({ storePayment, storeSlug });
-			// const storePayment = (await Store.findOne({ where: { id: storeId } }))
-			// 	.payment;
-			const clientReturnUrl = `${req.headers.origin}?orderId=${
-				order.id
-			}&orderEmail=${customer.email}`;
-
-			const isTestEnv = storePayment.test;
-			const protocol =
-				process.env.NODE_ENV === 'development' ? 'http' : req.protocol;
-			const paymentReturnUrl = `${protocol}://${req.get(
-				'host'
-			)}/order/capture?db_order_id=${order.id}&is_test=${isTestEnv}`;
-
-			/* ---------------START PAYPLUS------------------ */
-			if (storePayment.payplus) {
-				// Get direct link
-				const payplus = new Payplus(storePayment.payplus, isTestEnv);
-				const payplusLink = payplus.directLink(
-					total,
-					order.id,
-					paymentReturnUrl
-				);
-
-				// Update order
-				await order.update({
-					payment_provider_request: {
-						clientReturnUrl,
-						paymentProvider: 'payplus',
-					},
-				});
-				return res.json({ url: payplusLink });
-
-				/* ---------------END PAYPLUS------------------ */
-			} else if (storePayment.iCredit) {
-			/* ---------------START ICREDIT------------------ */
-				const ICredit = require('./../payment-providers/i-credit.provider');
-				const iCredit = new ICredit(storePayment.iCredit, isTestEnv);
-
-				iCredit.ipnUrls = {
-					success: `https://${req.get('host')}/order/${storeSlug}/ipn/${
-						order.id
-					}`,
-					failure: `https://${req.get('host')}/order/${storeSlug}/ipn/${
-						order.id
-					}?error=1`,
-				};
-				const getUrlRequest = iCredit.GetUrlRequest(
-					items,
-					quantitiesMap,
-					order.id,
-					shipping,
-					paymentReturnUrl,
-					customer
-				);
-				const { data } = await iCredit.getUrl(getUrlRequest);
-				await order.update({
-					payment_provider_request: {
-						...data,
-						clientReturnUrl,
-						paymentProvider: 'iCredit',
-					},
-				});
-				// console.log('iCreditLink', data);
-				return res.json({ url: data.URL });
-			} else if (storePayment.pelecard) {
-			/* ---------------END PAYPLUS------------------ */
-				/* ---------------START PELECARD------------------ */
-				const Pelecard = require('./../payment-providers/pelecard.provider');
-				const pelecard = new Pelecard(storePayment.iCredit, '', isTestEnv);
-				const initRequest = pelecard.InitRequest(paymentReturnUrl, total);
-
-				// return res.json(initRequest);
-				// return res.json(initRequest);
-				const { data } = await pelecard.Init(initRequest);
-				if (data.Error && data.Error.ErrCode !== 0) {
-					return res.status(422).json(data.Error);
-				}
-				// return res.json(data);
-
-				await order.update({
-					payment_provider_request: {
-						...data,
-						clientReturnUrl,
-						paymentProvider: 'pelecard',
-					},
-				});
-				// console.log('iCreditLink', data);
-				return res.json({ url: data.URL });
-
-				/* ---------------END PELECARD------------------ */
-			} else {
-				/* ---------------START PAYPAL------------------ */
-				const paypal = new Paypal(isTestEnv);
-
-				await paypal.generateAccessToken();
-
-				const urlPrefix = req.headers.origin
-					? req.headers.origin
-					: 'http://localhost:3000/';
-				const cancelUrl = `${urlPrefix}?order=error&orderId=${order.id}`;
-
-				const createOrderRequest = paypal.createOrderRequest(
-					'CAPTURE',
-					items,
-					total,
-					paymentReturnUrl,
-					cancelUrl
-				);
-				const { data } = await paypal.createOrder(createOrderRequest);
-
-				data.referredUrl = `${req.headers.origin}?orderId=${
-					order.id
-				}&orderEmail=${customer.email}`;
-
-				const paymentProviderRequest = {
-					...data,
-					clientReturnUrl,
-					paymentProvider: 'paypal',
-				};
-				// Update order
-				await order.update({
-					payment_provider_request: paymentProviderRequest,
-				});
-				const approveUrl = data.links.find(l => l.rel === 'approve').href;
-				return res.json({ url: approveUrl });
-				/* ---------------END PAYPAL------------------ */
-			}
-
-			// /* ---------------START PAYPLUS------------------ */
-			// const payplus = new Payplus('108ebd12540248bc9fb2ac7e600cc3c3', isTestEnv);
-			// const authenticateRequest = payplus.authenticateRequest(100, 'testorder');
-			// const resp = payplus.authenticate(authenticateRequest);
-			// return res.json(resp);
-			// /* ---------------END PAYPLUS------------------ */
+			return res.json(paymentUrl);
 		} catch (err) {
-			console.log('err', err);
-			if (err.response && err.response.data) {
-				return res.status(500).send(err.response.data);
-			}
-			return res.status(500).send(err);
+			console.error(err);
+			return res.status(500).send(err.toString());
 		}
 	});
 
@@ -473,7 +281,6 @@ module.exports = (
 					);
 				}
 			} else if (paymentProvider === 'pelecard') {
-				
 			} else {
 				// Paypal
 				const token = req.query.paypalOrderId;

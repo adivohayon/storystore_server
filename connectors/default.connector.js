@@ -3,33 +3,13 @@ const Paypal = require('./../payment-providers/paypal.provider');
 const Payplus = require('./../payment-providers/payplus.provider');
 
 module.exports = class DefaultConnector {
-	constructor(
-		clientBaseUrl,
-		serverBaseUrl,
-		Store,
-		Shelf,
-		Variation,
-		Attribute,
-		Variation_Attribute,
-		Customer,
-		Order,
-		Sequelize
-	) {
-		this.clientBaseUrl = clientBaseUrl;
-		this.serverBaseUrl = serverBaseUrl;
-		this.models = {
-			Store,
-			Shelf,
-			Variation,
-			Attribute,
-			Variation_Attribute,
-			Customer,
-			Order,
-		};
+	constructor(Models, Sequelize) {
+		// this.clientBaseUrl = clientBaseUrl;
+		// this.serverBaseUrl = serverBaseUrl;
+		this.models = Models;
 		this.Sequelize = Sequelize;
 		this.total = null;
 	}
-
 
 	// VALIDATIONS --------------------------------------
 	validateRequestCustomer(customer) {
@@ -47,9 +27,9 @@ module.exports = class DefaultConnector {
 	validateShipping(shipping) {
 		return shipping && shipping.price >= 0;
 	}
-	
+
 	// ITEMS --------------------------------------
-	getItems(idsArr) {
+	getDBItems(idsArr) {
 		// Get items
 		return this.models.Variation_Attribute.findAll({
 			attributes: ['id'],
@@ -95,14 +75,32 @@ module.exports = class DefaultConnector {
 		return { quantitiesMap, variationAttributeIds };
 	}
 
-
 	// CUSTOMER --------------------------------------
-	handleCustomer(customer) {
+	handleDBCustomer(customer) {
+		return this.createDBCustomer(customer);
+	}
+
+	createDBCustomer(customer) {
 		return this.models.Customer.create(customer);
 	}
 
 	// ORDER --------------------------------------
-	async createOrder(
+	async newOrder(
+		shippingType,
+		shippingPrice,
+		customerId,
+		items,
+		quantitiesMap
+	) {
+		return this.createDBOrder(
+			shippingType,
+			shippingPrice,
+			customerId,
+			items,
+			quantitiesMap
+		);
+	}
+	async createDBOrder(
 		shippingType,
 		shippingPrice,
 		customerId,
@@ -132,70 +130,6 @@ module.exports = class DefaultConnector {
 			return order;
 		} catch (err) {
 			reject(err);
-		}
-	}
-
-	newOrder(requestItems, requestCustomer, shipping) {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const { quantitiesMap, variationAttributeIds } = this.parseRequestItems(
-					requestItems
-				);
-
-				const items = await this.getItems(variationAttributeIds);
-				if (items.length < 1) {
-					throw new Error('Items were not found in database');
-				}
-
-				this.total = this.getTotal(items, quantitiesMap, shipping.price);
-
-				const customer = await this.handleCustomer(requestCustomer);
-
-				const order = await this.createOrder(
-					shipping.type,
-					shipping.price,
-					customer.id,
-					items,
-					quantitiesMap
-				);
-				
-				const storeId = items[0].variation.Shelf.StoreId;
-
-				const { storeSlug, storePayment } = await this.getStoreInfo(storeId);
-				
-				
-				resolve({ order, storeId, items, storeSlug, storePayment, customer });
-				// /* ---------------START PAYPLUS------------------ */
-				// const payplus = new Payplus('108ebd12540248bc9fb2ac7e600cc3c3', isTestEnv);
-				// const authenticateRequest = payplus.authenticateRequest(100, 'testorder');
-				// const resp = payplus.authenticate(authenticateRequest);
-				// return res.json(resp);
-				// /* ---------------END PAYPLUS------------------ */
-			} catch (err) {
-				console.log('err', err);
-				if (err.response && err.response.data) {
-					reject(err.response.data);
-				} else {
-					reject(err);
-				}
-			}
-		});
-	}
-
-	async getStoreInfo(storeId) {
-		try {
-			const {
-				slug: storeSlug,
-				payment: storePayment,
-			} = await this.models.Store.findOne({
-				where: { id: storeId },
-				attributes: ['slug', 'payment'],
-			});
-			// console.log('storePayment', storePayment);
-			return { storeSlug, storePayment };
-		} catch (err) {
-			console.error('err');
-			return err.toString();
 		}
 	}
 
@@ -270,7 +204,10 @@ module.exports = class DefaultConnector {
 					/* ---------------START PELECARD------------------ */
 					const Pelecard = require('./../payment-providers/pelecard.provider');
 					const pelecard = new Pelecard(storePayment.iCredit, '', isTestEnv);
-					const initRequest = pelecard.InitRequest(paymentReturnUrl, this.total);
+					const initRequest = pelecard.InitRequest(
+						paymentReturnUrl,
+						this.total
+					);
 
 					// return res.json(initRequest);
 					// return res.json(initRequest);
@@ -289,11 +226,10 @@ module.exports = class DefaultConnector {
 					});
 					// console.log('iCreditLink', data);
 					resolve({ url: data.URL });
-				} 
+				} else {
 				/* ---------------END PELECARD------------------ */
-				
+
 				/* ---------------START PAYPAL------------------ */
-				else {
 					const paypal = new Paypal(isTestEnv);
 
 					await paypal.generateAccessToken();
@@ -310,7 +246,6 @@ module.exports = class DefaultConnector {
 						cancelUrl
 					);
 					const { data } = await paypal.createOrder(createOrderRequest);
-
 
 					data.referredUrl = `${this.clientBaseUrl}?orderId=${
 						order.id

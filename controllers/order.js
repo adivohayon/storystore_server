@@ -10,6 +10,7 @@ const Mailer = require('./../helpers/mailer.helper');
 const util = require('util');
 const FormatDate = require('date-fns/format');
 const DefaultConnector = require('./../connectors/default.connector');
+const WoocommerceConnector = require('./../connectors/woocommerce.connector');
 // const axios = require('axios');
 const createOrderId = (prefix, orderId) => {
 	return prefix + orderId;
@@ -193,14 +194,140 @@ module.exports = (
 	});
 
 	app.post('/', async (req, res) => {
-		const clientBaseUrl = req.headers.origin;
-		const protocol =
-			process.env.NODE_ENV === 'development' ? 'http' : req.protocol;
-		const serverBaseUrl = `${protocol}://${req.get('host')}`;
+		try {
+			// 1. GET STORE INFO
+			const storeId = +req.body.storeId;
 
-		// const connector = new DefaultConnector(
-		// 	clientBaseUrl,
-		// 	serverBaseUrl,
+			if (!storeId) {
+				throw new Error('No storeId provided');
+			}
+			const {
+				slug: storeSlug,
+				payment: storePayment,
+				settings: { integrations },
+			} = await Store.findOne({
+				where: { id: storeId },
+				attributes: ['slug', 'payment', 'settings'],
+			});
+
+			// 2. SETUP CONNECTOR
+			let connector, token;
+			const Models = {
+				Store,
+				Shelf,
+				Variation,
+				Attribute,
+				Variation_Attribute,
+				Customer,
+				Order,
+			};
+			if (
+				integrations.order &&
+				integrations.order.connector === 'WOOCOMMERCE'
+			) {
+				if (
+					!integrations.order.auth ||
+					!integrations.order.auth.username ||
+					!integrations.order.auth.password
+				) {
+					throw new Error('Woocommerce integration is missing auth');
+				}
+
+				connector = new WoocommerceConnector(
+					integrations.order.baseURL,
+					integrations.order.auth.username,
+					integrations.order.auth.password,
+					Models,
+					Sequelize
+				);
+				// return res.json(integrations);
+				token = await connector.generateAuthToken();
+			} else {
+				connector = new DefaultConnector(Models, Sequelize);
+			}
+
+			// 3. VALIDATE SHIT
+			if (!connector.validateRequestCustomer(req.body.customer)) {
+				throw new Error('Invalid customer format');
+			}
+
+			if (!connector.validateRequestItems(req.body.items)) {
+				throw new Error('Invalid request items format');
+			}
+
+			if (!connector.validateShipping(req.body.shipping)) {
+				throw new Error('Invalid shipping option');
+			}
+
+			// 4. CUSTOMER & SHIPPING
+			const customer = await connector.handleDBCustomer(req.body.customer);
+			const shipping = req.body.shipping;
+
+			// 5. ITEMS AND TOTAL FROM DB
+			const {
+				quantitiesMap,
+				variationAttributeIds,
+			} = connector.parseRequestItems(req.body.items);
+
+			const items = await connector.getDBItems(variationAttributeIds);
+			if (items.length < 1) {
+				throw new Error('Items were not found in database');
+			}
+
+			connector.total = connector.getTotal(
+				items,
+				quantitiesMap,
+				shipping.price
+			);
+			
+
+			// 6. CREATE ORDER
+			const order = await connector.createDBOrder(
+				shipping.type,
+				shipping.price,
+				customer.id,
+				items,
+				quantitiesMap
+			);
+		
+
+			// 7. HANDLE PAYMENT
+			// ....
+
+
+
+			// 8. CREATE EXTERNAL ORDERS
+			
+			// 8.1 CREATE EXTERNAL ORDERS / WOOCOMMERCE
+			if (
+				integrations.order &&
+				integrations.order.connector === 'WOOCOMMERCE'
+			) {
+				const wcOrderRequest = connector.WCOrderRequest(
+					customer,
+					req.body.items,
+					quantitiesMap,
+					shipping
+				);
+				
+				const wcOrder = await connector.createWCOrder(wcOrderRequest)
+			}
+			
+
+			return res.json(wcOrder);
+
+
+		} catch (err) {
+			return res.status(500).send(err.toString());
+		}
+
+		//BELONGS TO PAYMEWNT PART
+		// const clientBaseUrl = req.headers.origin;
+		// const protocol =
+		// 	process.env.NODE_ENV === 'development' ? 'http' : req.protocol;
+		// const serverBaseUrl = `${protocol}://${req.get('host')}`;
+
+		// const Models = {
 		// 	Store,
 		// 	Shelf,
 		// 	Variation,
@@ -208,53 +335,52 @@ module.exports = (
 		// 	Variation_Attribute,
 		// 	Customer,
 		// 	Order,
-		// 	Sequelize
-		// );
+		// };
+		// const connector = new WoocommerceConnector(Models, Sequelize);
 
-		const woocommerceAPIUrl = 'http://localhost:8080/wp-json/';
-		const connector = new WoocommerceConnector(woocommerceAPIUrl);
+		// const woocommerceAPIUrl = 'http://localhost:8080/wp-json/';
+		// const connector = new WoocommerceConnector(woocommerceAPIUrl);
 
+		// if (!connector.validateRequestCustomer(req.body.customer)) {
+		// 	throw new Error('Invalid customer format');
+		// }
 
-		if (!connector.validateRequestCustomer(req.body.customer)) {
-			throw new Error('Invalid customer format');
-		}
+		// if (!connector.validateRequestItems(req.body.items)) {
+		// 	throw new Error('Invalid request items format');
+		// }
 
-		if (!connector.validateRequestItems(req.body.items)) {
-			throw new Error('Invalid request items format');
-		}
+		// if (!connector.validateShipping(req.body.shipping)) {
+		// 	throw new Error('Invalid shipping option');
+		// }
 
-		if (!connector.validateShipping(req.body.shipping)) {
-			throw new Error('Invalid shipping option');
-		}
+		// try {
+		// 	const {
+		// 		order,
+		// 		items,
+		// 		storeId,
+		// 		storeSlug,
+		// 		storePayment,
+		// 		customer,
+		// 	} = await connector.newOrder(
+		// 		req.body.items,
+		// 		req.body.customer,
+		// 		req.body.shipping
+		// 	);
 
-		try {
-			const {
-				order,
-				items,
-				storeId,
-				storeSlug,
-				storePayment,
-				customer,
-			} = await connector.newOrder(
-				req.body.items,
-				req.body.customer,
-				req.body.shipping
-			);
-			
-			//console.log('storePayment', storePayment);
-			const paymentUrl = await connector.handlePayment(
-				storePayment,
-				order,
-				items,
-				customer,
-				storeSlug
-			);
+		// 	//console.log('storePayment', storePayment);
+		// 	const paymentUrl = await connector.handlePayment(
+		// 		storePayment,
+		// 		order,
+		// 		items,
+		// 		customer,
+		// 		storeSlug
+		// 	);
 
-			return res.json(paymentUrl);
-		} catch (err) {
-			console.error(err);
-			return res.status(500).send(err.toString());
-		}
+		// 	return res.json(paymentUrl);
+		// } catch (err) {
+		// 	console.error(err);
+		// 	return res.status(500).send(err.toString());
+		// }
 	});
 
 	app.get('/capture', async (req, res) => {

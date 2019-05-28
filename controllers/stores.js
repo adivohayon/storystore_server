@@ -263,7 +263,7 @@ module.exports = (
 									attributes: ['type', 'label'],
 								},
 							],
-							through: { attributes: ['id'], as: 'variationAttribute' },
+							through: { attributes: ['id', 'external_id'], as: 'variationAttribute' },
 						},
 						{
 							model: Item_Property,

@@ -261,7 +261,8 @@ module.exports = (
 					'successfuly removed all shelves for storeId: ' + req.body.storeId,
 			});
 		} catch (err) {
-			res.status(400).send({ message: err });
+			console.log(err);
+			res.status(400).send({ message: err.toString() });
 		}
 	});
 

@@ -12,6 +12,7 @@ module.exports = (sequelize, Sequelize) => {
 			variationId: { type: Sequelize.INTEGER, allowNull: false },
 			attributeId: { type: Sequelize.INTEGER },
 			attribute_order: Sequelize.INTEGER,
+			externalId: Sequelize.STRING,
 		},
 		{
 			indexes: [{ fields: ['variationId', 'attributeId'], unique: true }],

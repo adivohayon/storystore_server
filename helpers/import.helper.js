@@ -169,13 +169,13 @@ module.exports = class Import {
 						property_value,
 						itemPropertyId,
 						product_url,
-						variation_order
+						variation_order,
 					} of shelfVariations) {
 						// Get attributes for variation
 						const variationAttributes = attributes.filter(
 							attr => attr.variation_id === variationCsvId
 						);
-						
+
 						// return res.json(variationAttributes);
 						// console.log('variationAttributes', variationAttributes);
 						const assets = allAssets
@@ -209,7 +209,11 @@ module.exports = class Import {
 								.then(async dbVariation => {
 									//console.log(dbVariation, id, dbVariation.slug);
 									if (variationAttributes.length === 0) {
-										variationAttributes.push({label: null, value: null, itemPropertyId: null});
+										variationAttributes.push({
+											label: null,
+											value: null,
+											itemPropertyId: null,
+										});
 									}
 									// BEGIN LOOP - attributes
 									const upsertAttributesPromises = [];
@@ -217,7 +221,9 @@ module.exports = class Import {
 										label,
 										value,
 										itemPropertyId,
+										external_id,
 									} of variationAttributes) {
+										
 										// push findOrCreate for each attribute to promises
 										//console.log('attribute', label);
 										const dbAttribute = this.Models.Attribute.findOrCreate({
@@ -234,7 +240,9 @@ module.exports = class Import {
 
 											// if it was just created make the association
 											if (created) {
-												return dbVariation[0].addAttribute(instance);
+												return dbVariation[0].addAttribute(instance, {
+													through: { externalId: external_id || null },
+												});
 											} else {
 												// if not check if it's already associated
 												return dbVariation[0]
@@ -242,7 +250,9 @@ module.exports = class Import {
 													.then(result => {
 														// If not associated, make the association
 														if (!result) {
-															return dbVariation[0].addAttribute(instance);
+															return dbVariation[0].addAttribute(instance, {
+																through: { externalId: external_id || null },
+															});
 														} else {
 															return instance;
 														}

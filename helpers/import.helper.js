@@ -29,11 +29,16 @@ module.exports = class Import {
 					}).promise();
 					assets = assets.concat(
 						Contents.map(({ Key }) => Key).filter(key =>
-							/\.(jpg|mp4)$/.test(key)
+							/\.(jpg|jpeg|mp4)$/.test(key)
 						)
 					);
+					console.log('import helper/ assets', assets);
 					if (!IsTruncated) break;
 					ContinuationToken = NextContinuationToken;
+					console.log(
+						'import / getAssets / ContinuationToken',
+						ContinuationToken
+					);
 				}
 				if (!assets.length) {
 					reject(`Could not find assets for '${this.storeSlug}'`);
@@ -223,7 +228,6 @@ module.exports = class Import {
 										itemPropertyId,
 										external_id,
 									} of variationAttributes) {
-										
 										// push findOrCreate for each attribute to promises
 										//console.log('attribute', label);
 										const dbAttribute = this.Models.Attribute.findOrCreate({
@@ -237,11 +241,10 @@ module.exports = class Import {
 										}).then(([instance, created]) => {
 											//console.log('created', created);
 
-
 											// if it was just created make the association
 											if (created) {
 												return dbVariation[0].addAttribute(instance, {
-													through: { externalId: external_id || null },
+													through: { external_id: external_id || null },
 												});
 											} else {
 												// if not check if it's already associated
@@ -251,7 +254,7 @@ module.exports = class Import {
 														// If not associated, make the association
 														if (!result) {
 															return dbVariation[0].addAttribute(instance, {
-																through: { externalId: external_id || null },
+																through: { external_id: external_id || null },
 															});
 														} else {
 															return instance;

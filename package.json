@@ -61,6 +61,7 @@
 		"require-all": "^3.0.0",
 		"sequelize": "^4.42.0",
 		"serverless-http": "^1.9.0",
-		"source-map-support": "^0.5.10"
+		"source-map-support": "^0.5.10",
+		"universal-analytics": "^0.4.20"
 	}
 }

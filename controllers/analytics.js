@@ -9,11 +9,11 @@ module.exports = (app, {}) => {
 		console.log('TRANSPARENT_GIF_BUFFER', TRANSPARENT_GIF_BUFFER.length);
 		const analytics = new Analytics('UA-134688384-1');
 
-		const { action, key, value } = req.query;
+		const { action, storeSlug, influencer } = req.query;
 
 		switch (action) {
 			case 'checkoutComplete':
-				await analytics.checkoutComplete(value);
+				await analytics.checkoutComplete(storeSlug, influencer);
 				break;
 			default:
 				await analytics.pixelLoaded();

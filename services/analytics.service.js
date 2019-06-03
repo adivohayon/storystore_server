@@ -15,14 +15,13 @@ module.exports = class Analytics {
 			});
 		});
 	}
-	checkoutComplete(totalValue) {
+	checkoutComplete(storeSlug, influencer) {
 		return new Promise((resolve, reject) => {
-			this.visitor.event('category', 'action', 'label', 'value', )
 			this.visitor.event(
+				storeSlug + '__checkout',
 				'checkoutComplete',
-				'complete',
-				totalValue,
-				totalValue,
+				'influencer',
+				influencer,
 				err => {
 					if (err) {
 						reject(err);

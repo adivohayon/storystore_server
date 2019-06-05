@@ -29,7 +29,7 @@ module.exports = class Import {
 					}).promise();
 					assets = assets.concat(
 						Contents.map(({ Key }) => Key).filter(key =>
-							/\.(jpg|jpeg|mp4)$/.test(key)
+							/\.(jpg|jpeg|webp|mp4)$/.test(key)
 						)
 					);
 					console.log('import helper/ assets', assets);

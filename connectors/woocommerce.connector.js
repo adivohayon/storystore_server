@@ -33,7 +33,7 @@ module.exports = class WoocommerceConnector extends DefaultConnector {
 		});
 	}
 
-	createWCOrder(wcOrderRequest) {
+	WC_createOrder(wcOrderRequest) {
 		return new Promise(async (resolve, reject) => {
 			const url = this.baseURL + 'wc/v3/orders';
 			console.log('url', url);
@@ -58,7 +58,7 @@ module.exports = class WoocommerceConnector extends DefaultConnector {
 		});
 	}
 
-	getWCLineItems(requestItems, quantitiesMap) {
+	WC_getLineItems(requestItems, quantitiesMap) {
 		const lineItems = requestItems.map(item => {
 			const lineItem = {
 				product_id: item.productId || 0,
@@ -72,7 +72,7 @@ module.exports = class WoocommerceConnector extends DefaultConnector {
 		return lineItems;
 	}
 
-	getWCShippingLines(shipping) {
+	WC_getShippingLines(shipping) {
 		return [
 			{
 				method_id: 'flat_rate',
@@ -82,7 +82,7 @@ module.exports = class WoocommerceConnector extends DefaultConnector {
 		];
 	}
 
-	WCOrderRequest(customer, requestItems, quantitiesMap, shipping) {
+	WC_OrderRequest(customer, requestItems, quantitiesMap, shipping) {
 		const lineItems = this.getWCLineItems(requestItems, quantitiesMap);
 		const shippingLines = this.getWCShippingLines(shipping);
 		const req = {
@@ -103,5 +103,9 @@ module.exports = class WoocommerceConnector extends DefaultConnector {
 
 		console.log('WCOrderRequest', req);
 		return req;
+	}
+
+	WC_AddToCart(item) {
+
 	}
 };

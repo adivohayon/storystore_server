@@ -303,14 +303,14 @@ module.exports = (
 				integrations.order &&
 				integrations.order.connector === 'WOOCOMMERCE'
 			) {
-				const wcOrderRequest = connector.WCOrderRequest(
+				const wcOrderRequest = connector.WC_OrderRequest(
 					customer,
 					req.body.items,
 					quantitiesMap,
 					shipping
 				);
 				
-				const wcOrder = await connector.createWCOrder(wcOrderRequest)
+				const wcOrder = await connector.WC_createOrder(wcOrderRequest)
 			}
 			
 

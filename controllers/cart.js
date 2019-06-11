@@ -25,32 +25,13 @@ module.exports = (app, { Store }) => {
 			if (cartIntegrationIndex > -1) {
 				if (
 					settings.integrations[cartIntegrationIndex].connector ===
-						'WOOCOMMERCE' &&
-					settings.integrations[cartIntegrationIndex].baseUrl &&
-					settings.integrations[cartIntegrationIndex].username &&
-					settings.integrations[cartIntegrationIndex].password
+					'WOOCOMMERCE'
 				) {
 					connector = new WoocommerceConnector(
-						settings.integrations[cartIntegrationIndex].baseUrl
+						settings.integrations[cartIntegrationIndex]
 					);
 
-					if (
-						settings.integrations[cartIntegrationIndex].token &&
-						settings.integrations[cartIntegrationIndex].token.length > 0
-					) {
-						token = settings.integrations[cartIntegrationIndex].token;
-						connector.setToken(token);
-					} else {
-						token = await connector.generateAuthToken(
-							settings.integrations[cartIntegrationIndex].username,
-							settings.integrations[cartIntegrationIndex].password
-						);
-						const clonedSettings = { ...settings };
-						clonedSettings.integrations[cartIntegrationIndex].token = token;
-
-						store.settings = clonedSettings;
-						await store.save();
-					}
+					await connector.getToken(store, cartIntegrationIndex);
 				}
 			}
 
@@ -60,7 +41,7 @@ module.exports = (app, { Store }) => {
 
 			// Connector logic starts
 			connector.addToCart();
-			return res.json(connector.headers);
+			return res.json(connector.token);
 
 			// return res.send(response);
 		} catch (err) {

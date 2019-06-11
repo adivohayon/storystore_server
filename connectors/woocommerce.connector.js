@@ -2,30 +2,78 @@ const axios = require('axios');
 const DefaultConnector = require('./default.connector');
 
 module.exports = class WoocommerceConnector extends DefaultConnector {
-	constructor(baseURL) {
+	constructor(integration) {
 		super();
-		this.setConnectorName('woocommerce');
-		this.baseURL = baseURL;
-		this.token = null;
-		this.headers = null;
+		super.setConnectorName('woocommerce');
+		this.baseURL = integration.baseUrl;
+		this.username = integration.username;
+		this.password = integration.password;
+		this.token = integration.token || null;
 	}
 
-	// GENERATE TOKEN
-	generateAuthToken(username, password) {
+	// HEADERS
+	getHeaders() {
+		if (this.token) {
+			return {
+				headers: {
+					Authorization: 'Bearer ' + this.token,
+					'Content-Type': 'application/json;charset=UTF-8',
+				},
+			};
+		} else {
+			return {};
+		}
+	}
+
+	// BEGIN TOKEN
+	getToken(storeInstance, integrationIndex) {
+		return new Promise(async (resolve, reject) => {
+			try {
+				if (this.token) {
+					await this.validateToken();
+					resolve(this.token);
+				} else {
+					await this.generateAuthToken(storeInstance, integrationIndex);
+					resolve(this.token);
+				}
+			} catch (err) {
+				if (err.response.data.code === 'jwt_auth_invalid_token') {
+					await this.generateAuthToken(storeInstance, integrationIndex);
+					resolve(this.token);
+				} else {
+					console.log(err);
+					reject(err);
+				}
+			}
+		});
+	}
+
+	validateToken() {
+		const endpoint = this.baseURL + '/wp-json/jwt-auth/v1/token/validate';
+		return axios.post(endpoint, null, this.getHeaders());
+	}
+
+	generateAuthToken(storeInstance, integrationIndex) {
 		return new Promise(async (resolve, reject) => {
 			const url = this.baseURL + '/wp-json/jwt-auth/v1/token';
 			try {
 				const {
 					data: { token },
 				} = await axios.post(url, {
-					username: username,
-					password: password,
+					username: this.username,
+					password: this.password,
 				});
 
 				console.log('auth token', token);
 
-				this.setToken(token);
+				this.token = token;
 
+				if (storeInstance) {
+					const settings = Object.assign({}, storeInstance.settings);
+					settings.integrations[integrationIndex].token = this.token;
+					storeInstance.settings = settings;
+					await storeInstance.save();
+				}
 				resolve(token);
 			} catch (err) {
 				console.log(err);
@@ -33,7 +81,9 @@ module.exports = class WoocommerceConnector extends DefaultConnector {
 			}
 		});
 	}
-
+	// END TOKEN
+	
+	// BEGIN ADD TO CART
 	addToCart(item) {
 		console.log('woocommerce cart');
 		// const { data } = await axios.post(url, data, {
@@ -42,12 +92,5 @@ module.exports = class WoocommerceConnector extends DefaultConnector {
 
 		super.addToCart(item);
 	}
-
-	setToken(token) {
-		this.token = token;
-		this.headers = {
-			Authorization: 'Bearer ' + token,
-			'Content-Type': 'application/json;charset=UTF-8',
-		};
-	}
+	// END ADD TO CART
 };

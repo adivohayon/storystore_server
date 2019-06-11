@@ -1,34 +1,70 @@
-// const _ = require('lodash');
-const axios = require('axios');
-const config = {
-	headers: {
-		'Content-Type': 'application/x-www-form-urlencoded',
-	},
-};
-const ApiUrl = 'https://www.hoodies.co.il/Handlers/AddToCartHandler.ashx';
-const FormData = {
-	q: '2076_24066_1.416068.0_2.415145.0',
-	func: '',
-};
-const StringifiedFormData = JSON.stringify(FormData);
+const DefaultConnector = require('./../connectors/default.connector');
+const WoocommerceConnector = require('./../connectors/woocommerce.connector');
 
-module.exports = app => {
+module.exports = (app, { Store }) => {
 	app.post('/add-to-cart', async (req, res) => {
-		// axios.post(ApiUrl, StringifiedFormData, config);
-		// .then(result => {
-		// 	console.log('success', result.data.message);
-		// 	return res.send(result.data.message);
-		// })
-		// .catch(error => {
-		// 	console.log(error.response);
-		// });
 		try {
-			// const {data} = await axios.post(ApiUrl, StringifiedFormData, config);
-			const response = await axios.post(ApiUrl, StringifiedFormData, config);
-			console.log('%%%', response);
-			return res.send(response);
+			let connector, token;
+			const storeId = +req.body.storeId;
+
+			if (!storeId) {
+				throw new Error('No storeId provided');
+			}
+
+			const store = await Store.findOne({
+				where: { id: storeId },
+				attributes: ['id', 'slug', 'settings'],
+			});
+
+			const { slug: storeSlug, settings } = store;
+
+			const cartIntegrationIndex = settings.integrations.findIndex(
+				integration => integration.type === 'cart'
+			);
+
+			if (cartIntegrationIndex > -1) {
+				if (
+					settings.integrations[cartIntegrationIndex].connector ===
+						'WOOCOMMERCE' &&
+					settings.integrations[cartIntegrationIndex].baseUrl &&
+					settings.integrations[cartIntegrationIndex].username &&
+					settings.integrations[cartIntegrationIndex].password
+				) {
+					connector = new WoocommerceConnector(
+						settings.integrations[cartIntegrationIndex].baseUrl
+					);
+
+					if (
+						settings.integrations[cartIntegrationIndex].token &&
+						settings.integrations[cartIntegrationIndex].token.length > 0
+					) {
+						token = settings.integrations[cartIntegrationIndex].token;
+						connector.setToken(token);
+					} else {
+						token = await connector.generateAuthToken(
+							settings.integrations[cartIntegrationIndex].username,
+							settings.integrations[cartIntegrationIndex].password
+						);
+						const clonedSettings = { ...settings };
+						clonedSettings.integrations[cartIntegrationIndex].token = token;
+
+						store.settings = clonedSettings;
+						await store.save();
+					}
+				}
+			}
+
+			if (!connector) {
+				connector = new DefaultConnector();
+			}
+
+			// Connector logic starts
+			connector.addToCart();
+			return res.json(connector.headers);
+
+			// return res.send(response);
 		} catch (err) {
-			console.error(err);
+			res.send(err.toString());
 		}
 	});
 };

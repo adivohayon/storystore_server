@@ -82,15 +82,26 @@ module.exports = class WoocommerceConnector extends DefaultConnector {
 		});
 	}
 	// END TOKEN
-	
-	// BEGIN ADD TO CART
-	addToCart(item) {
-		console.log('woocommerce cart');
-		// const { data } = await axios.post(url, data, {
-		// 	headers: this.headers
-		// });
 
-		super.addToCart(item);
+	// BEGIN CATALOG
+	listProducts() {
+		const endpoint = this.baseURL + '/wp-json/wc/v3/products';
+		return axios
+			.get(endpoint, this.getHeaders())
+			.then(resp => resp.data)
+			.catch(err => {
+				throw new Error(err.toString());
+			});
 	}
-	// END ADD TO CART
+
+	listProductVariations(productId) {
+		const endpoint = this.baseURL + '/wp-json/wc/v3/products/' + productId + '/variations';
+		return axios
+			.get(endpoint, this.getHeaders())
+			.then(resp => resp.data)
+			.catch(err => {
+				throw new Error(err.toString());
+			});
+	}
+	// END CATALOG
 };

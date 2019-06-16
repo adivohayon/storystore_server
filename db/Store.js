@@ -21,11 +21,21 @@ module.exports = (sequelize, Sequelize) => {
 			settings: {
 				type: Sequelize.JSON,
 				defaultValue: {
-					hasCart: true,
-					primaryColor: '#000000',
-					ctaColor: '#ffffff',
-					sendEmail: false,
-					showSeeMore: true,
+					options: {
+						theme: {
+							primaryColor: '#ffffff',
+							ctaColor: '#ffffff',
+						},
+						hasCart: true,
+						sendEmail: false,
+						showSeeMore: true,
+						feed: {},
+						stories: {
+							autostart: true,
+							started: false,
+						},
+					},
+					integrations: [],
 				},
 			},
 			desktop_url: Sequelize.STRING,

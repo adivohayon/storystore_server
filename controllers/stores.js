@@ -97,6 +97,7 @@ module.exports = (
 								'assets',
 								'variation_order',
 								'ShelfId',
+								'variation_info',
 							],
 							include: [
 								{
@@ -167,6 +168,7 @@ module.exports = (
 								'assets',
 								'variation_order',
 								'ShelfId',
+								'variation_info',
 							],
 							include: [
 								{
@@ -246,6 +248,7 @@ module.exports = (
 						'assets',
 						'variation_order',
 						'ShelfId',
+						'variation_info',
 					],
 					// where: sequelize.where(
 					// 	sequelize.fn('array_length', sequelize.col('assets'), 1),

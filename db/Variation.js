@@ -28,6 +28,7 @@ module.exports = (sequelize, Sequelize) => {
 			assets: Sequelize.ARRAY(Sequelize.STRING),
 			variation_order: Sequelize.INTEGER,
 			product_url: Sequelize.STRING,
+			variation_info: Sequelize.TEXT,
 		},
 		{
 			getterMethods: {

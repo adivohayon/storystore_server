@@ -4,9 +4,15 @@ module.exports = class Pelecard {
 	constructor(terminal, user, isTest) {
 		// this.pfsAuthCode = pfsAuthCode;
 		this.API_URL = 'https://gateway20.pelecard.biz/PaymentGW/';
+		// LADILA
+		// this.terminal = isTest ? '0962210' : terminal;
+		// this.user = isTest ? 'testpelecard3' : user;
+		// this.password = isTest ? 'Q3EJB8Ah' : password;
+
+		// PAISPLUS
 		this.terminal = isTest ? '0962210' : terminal;
-		this.user = isTest ? 'testpelecard3' : user;
-		this.password = isTest ? 'Q3EJB8Ah' : password;
+		this.user = isTest ? '1test1' : user;
+		this.password = isTest ? 'D3q0mOHP' : password;
 	}
 
 	InitRequest(paymentReturnUrl, total) {

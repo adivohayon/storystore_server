@@ -301,6 +301,7 @@ module.exports = (
 			await Promise.all(associationPromises);
 
 			const storeId = items[0].variation.Shelf.StoreId;
+			console.log('storeId', storeId);
 			const { slug: storeSlug, payment: storePayment } = await Store.findOne({
 				where: { id: storeId },
 				attributes: ['slug', 'payment'],
@@ -318,6 +319,7 @@ module.exports = (
 			const paymentReturnUrl = `${protocol}://${req.get(
 				'host'
 			)}/order/capture?db_order_id=${order.id}&is_test=${isTestEnv}`;
+			console.log('storePayment', storePayment);
 
 			/* ---------------START PAYPLUS------------------ */
 			if (storePayment.payplus) {
@@ -370,11 +372,12 @@ module.exports = (
 				});
 				// console.log('iCreditLink', data);
 				return res.json({ url: data.URL });
-			} else if (storePayment.pelecard) {
-			/* ---------------END PAYPLUS------------------ */
+					/* ---------------END ICREDIT------------------ */
+			} else if (storePayment.provider === 'pelecard') {
 				/* ---------------START PELECARD------------------ */
+				console.log('startPelecard');
 				const Pelecard = require('./../payment-providers/pelecard.provider');
-				const pelecard = new Pelecard(storePayment.iCredit, '', isTestEnv);
+				const pelecard = new Pelecard(storePayment.provider, '', isTestEnv);
 				const initRequest = pelecard.InitRequest(paymentReturnUrl, total);
 
 				// return res.json(initRequest);

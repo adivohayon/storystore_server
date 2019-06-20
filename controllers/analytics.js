@@ -16,6 +16,9 @@ module.exports = (app, {}) => {
 					case 'checkoutComplete':
 						await analytics.checkoutComplete(storeSlug, influencer);
 						break;
+					case 'checkoutBegin':
+						await analytics.checkoutBegin(storeSlug, influencer);
+						break;
 					default:
 						await analytics.pixelLoaded();
 						break;

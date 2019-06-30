@@ -32,13 +32,13 @@ module.exports = class Import {
 							/\.(jpg|jpeg|mp4)$/.test(key)
 						)
 					);
-					console.log('import helper/ assets', assets);
+					// console.log('import helper/ assets', assets);
 					if (!IsTruncated) break;
 					ContinuationToken = NextContinuationToken;
-					console.log(
-						'import / getAssets / ContinuationToken',
-						ContinuationToken
-					);
+					// console.log(
+					// 	'import / getAssets / ContinuationToken',
+					// 	ContinuationToken
+					// );
 				}
 				if (!assets.length) {
 					reject(`Could not find assets for '${this.storeSlug}'`);
@@ -209,7 +209,7 @@ module.exports = class Import {
 									product_url: product_url,
 									assets,
 									variation_order: Number(variation_order) || null,
-									variation_info: variation_info.trim(),
+									variation_info: variation_info ? variation_info.trim() : null,
 								},
 								// transaction,
 							})

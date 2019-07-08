@@ -209,7 +209,7 @@ module.exports = class Import {
 									product_url: product_url,
 									assets,
 									variation_order: Number(variation_order) || null,
-									variation_info: variation_info.trim(),
+									variation_info: variation_info ? variation_info.trim() : null,
 								},
 								// transaction,
 							})

@@ -1,13 +1,20 @@
 const StorystoreConnector = require('./../connectors/storystore.connector');
 module.exports = (
 	app,
-	{ sequelize, Store, Shelf, Variation, Attribute, Item_Property }
+	{ sequelize, Store, Shelf, Variation, Attribute, Item_Property, Category }
 ) => {
 	app.get('/ping', async (req, res) => {
 		res.send('pong');
 	});
-	app.get('/', async (req, res) => {
-		res.render('catalog/index');
+
+	app.get('/:storeId', async (req, res) => {
+		const storeId = Number(req.params.storeId);
+		if (!storeId) {
+			throw new Error('StoreId not provided');
+		}
+
+		const categories = await Category.findAll({ where: { StoreId: storeId } });
+		res.render('catalog/index', { categories });
 	});
 
 	app.get('/import', async (req, res) => {
@@ -73,6 +80,25 @@ module.exports = (
 			return res.send(`${numberOfInjectedProducts} products injected`);
 		} catch (err) {
 			console.error(err);
+			return res.sendStatus(500).send(err.toString());
+		}
+	});
+
+	app.post('/categories', async (req, res) => {
+		const { slug, label, storeId } = req.body;
+		if (!slug || !label) {
+			throw new Error('Missing fields');
+		}
+		try {
+			const category = await Category.create({
+				slug,
+				label,
+				parent_id: 0,
+				StoreId: storeId,
+			});
+			return res.json(category);
+		} catch (err) {
+			console.error('::POST::  Catalog / Categories', err.toString());
 			return res.sendStatus(500).send(err.toString());
 		}
 	});

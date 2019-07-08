@@ -17,7 +17,8 @@ module.exports = (sequelize, Sequelize) => {
 		}
 	);
 
-	model.associate = function({ Shelf }) {
+	model.associate = function({ Shelf, Store }) {
+		this.belongsTo(Store);
 		this.belongsToMany(Shelf, {
 			as: 'shelves',
 			through: {

@@ -2,7 +2,9 @@ const path = require('path');
 const require_all = require('require-all');
 const Sequelize = require('sequelize');
 
-const sequelize = (module.exports = new Sequelize(process.env.DATABASE_URL, {
+const dbUrl = process.env.DATABASE_URL;
+console.log('dbUrl', dbUrl);
+const sequelize = (module.exports = new Sequelize(dbUrl, {
 	operatorsAliases: false,
 	logging: false,
 	// logging: console.log,

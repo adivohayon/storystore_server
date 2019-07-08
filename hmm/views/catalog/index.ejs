@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Hmm... Catalog</title>
+		<link
+			href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap"
+			rel="stylesheet"
+		/>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<script>
+			$(function() {
+				var storeId = Number(
+					location.href.substring(location.href.lastIndexOf('/') + 1)
+				);
+				console.log('storeId', storeId);
+				// BEGIN SYNC-DB
+				$('#sync-db').click(function() {
+					var confirmation = confirm(
+						'Are you sure you want to sync the database?'
+					);
+					if (confirmation) {
+						$('#sync-db-message').fadeOut(50);
+						$.get('http://localhost:4000/admin/sync?alter=true', function(
+							data
+						) {
+							console.log('DB Synced', data);
+							$('#sync-db-message').fadeIn(200);
+						});
+					}
+				});
+				// END SYNC-DB
+
+				// END NEW-CATEGORY
+				$('#new-category').click(function() {
+					var slug = $('#category-slug').val();
+					var label = $('#category-label').val();
+					$('#new-category-message--error').fadeOut(50);
+
+					$.post('/catalog/categories', { slug, label, storeId })
+						.done(function(data) {
+							console.log('New category created', data);
+							var rowStr = '<tr>';
+							rowStr += '<th>' + data.id + '</th>';
+							rowStr += '<th>' + data.slug + '</th>';
+							rowStr += '<th>' + data.label + '</th>';
+							rowStr += '</tr>';
+
+							$('.categories__list').append(rowStr);
+							$('#category-slug').val('');
+							$('#category-label').val('');
+						})
+						.fail(function(xhr, status, err) {
+							console.error('There was an error', err);
+							$('#category-slug').val('');
+							$('#category-label').val('');
+							$('#new-category-message--error').fadeIn(200);
+						});
+				});
+			});
+		</script>
+	</head>
+	<style>
+		body {
+			background-color: #ededed;
+			font-size: 14px;
+			padding: 1rem;
+			margin: 0;
+			font-family: 'Open Sans', sans-serif;
+		}
+		.section {
+			margin: 1rem 0;
+			background-color: #3e3e3e;
+			padding: 1rem;
+			color: #ffffff;
+		}
+
+		.sticky {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			padding: 1rem;
+			text-align: center;
+		}
+		.btn,
+		input {
+			font-size: 1rem;
+			border: 0;
+			padding: 0.5rem 1rem;
+			outline: none;
+		}
+		.warning {
+			font-weight: bold;
+			margin-top: 0.5rem;
+		}
+		.btn--warning {
+			background-color: #ca3131;
+			color: white;
+		}
+		.message--success {
+			background-color: green;
+		}
+		.message--error {
+			background-color: #ca3131;
+		}
+		.message {
+			display: none;
+			color: white;
+			padding: 1rem;
+			margin-top: 0.5rem;
+		}
+		table {
+			border: 0;
+			width: 100%;
+			border-spacing: 0;
+			border-bottom: 1px solid white;
+			margin: 1rem 0;
+		}
+		th {
+			border-bottom: 1px solid white;
+		}
+		td, th {
+			text-align: center;
+			padding: 0.5rem;
+		}
+	</style>
+	<body>
+		<div class="sticky environment">Local</div>
+		<h1>Hmm... Catalog</h1>
+		<section class="section section--categories">
+			<h2>Categories</h2>
+
+			<table>
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Slug</th>
+						<th>Label</th>
+					</tr>
+				</thead>
+				<tbody class="list categories__list">
+					<% for (var i = 0; i < categories.length; i++) { %>
+					<tr>
+						<td><%= categories[i].id %></td>
+						<td><%= categories[i].slug %></td>
+						<td><%= categories[i].label %></td>
+					</tr>
+					<% } %>
+				</tbody>
+			</table>
+			<div class="categories__new-category">
+				<input
+					type="text"
+					id="category-slug"
+					name="category-slug"
+					placeholder="Slug"
+				/>
+				<input
+					type="text"
+					id="category-label"
+					name="category-label"
+					placeholder="Label"
+				/>
+				<button id="new-category" class="btn btn--action">Save Category</button>
+				<div class="message message--error" id="new-category-message--error">
+					Category was not created
+				</div>
+			</div>
+		</section>
+		<section class="section section--sync">
+			<button id="sync-db" class="btn btn--warning">Sync Database</button>
+			<div class="warning">Warning, use with discretion</div>
+			<div class="message message-success" id="sync-db-message">
+				DB synced successfully
+			</div>
+		</section>
+	</body>
+</html>

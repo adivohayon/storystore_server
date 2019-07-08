@@ -108,6 +108,7 @@ module.exports = (
 			{ type: 'swimsuit_top_size', label: 'בגד ים חלק עליון' },
 			{ type: 'swimsuit_bottom_size', label: 'בגד ים חלק תחתון' },
 			{ type: 'size_general', label: 'גודל' },
+			{ type: 'simple', label: '' },
 		];
 		const createPromises = [];
 		for (const { type, label } of itemProperties) {

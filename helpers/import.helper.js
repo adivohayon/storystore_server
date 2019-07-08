@@ -29,16 +29,16 @@ module.exports = class Import {
 					}).promise();
 					assets = assets.concat(
 						Contents.map(({ Key }) => Key).filter(key =>
-							/\.(jpg|jpeg|webp|mp4)$/.test(key)
+							/\.(jpg|jpeg|mp4)$/.test(key)
 						)
 					);
-					console.log('import helper/ assets', assets);
+					// console.log('import helper/ assets', assets);
 					if (!IsTruncated) break;
 					ContinuationToken = NextContinuationToken;
-					console.log(
-						'import / getAssets / ContinuationToken',
-						ContinuationToken
-					);
+					// console.log(
+					// 	'import / getAssets / ContinuationToken',
+					// 	ContinuationToken
+					// );
 				}
 				if (!assets.length) {
 					reject(`Could not find assets for '${this.storeSlug}'`);

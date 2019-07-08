@@ -1,0 +1,184 @@
+service: storystore-hmm
+package:
+  individually: true
+  exclude:
+  - .git/**
+  - .vscode/**
+  - .env.development
+  - controllers/**
+  - payment-providers/**
+
+functions:
+  hmm:
+    handler: handler.hmm
+    events:
+      - http:
+          path: /
+          method: ANY
+      - http:
+          path: /{proxy+}
+          method: ANY
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stage: prod
+  region: us-east-1
+  profile: storystore
+  timeout: 30
+  logRetentionInDays: 30
+  vpc:
+    securityGroupIds:
+      - Ref: LambdaExecutionSecurityGroup
+    subnetIds:
+      - Ref: AppSubnet1
+      - Ref: AppSubnet2
+      - Ref: AppSubnet3
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: '*'
+  environment:
+    COOKIE_SECRET: FwUGHVrf1cMzl9pa
+    BUCKET:
+      Ref: Bucket
+    DATABASE_URL:
+      Fn::Join:
+        - ''
+        - - 'postgres://'
+          - ${self:custom.dbUsername}:${self:custom.dbPassword}
+          - '@'
+          - Fn::GetAtt: [RDSCluster, Endpoint.Address]
+          - ':'
+          - Fn::GetAtt: [RDSCluster, Endpoint.Port]
+          - '/'
+          - ${self:custom.dbName}
+
+plugins:
+  - serverless-domain-manager
+  - serverless-offline
+  - serverless-dotenv-plugin
+  - serverless-vpc-plugin
+  - serverless-dependson-plugin
+
+custom:
+  dbUsername: storystore
+  dbPassword: vspPzraqM8xibv5k
+  dbName: storystore
+  serverless-offline:
+    port: 4000
+    dontPrintOutput: true
+  vpcConfig:
+    cidrBlock: 10.0.0.0/16
+    useNatGateway: true
+    zones:
+      - us-east-1a
+      - us-east-1b
+      - us-east-1c
+    services:
+      - s3
+  customDomain:
+    domainName: hmm.storystore.co.il
+    basePath: ''
+    stage: ${self:provider.stage}
+    createRoute53Record: true
+    endpointType: regional
+
+resources:
+  Resources:
+    Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 300
+    DBGatewaySecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: DBGateway Security Group
+        VpcId:
+          Ref: VPC
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+            CidrIp: "0.0.0.0/0"
+    RDSSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: SecurityGroup for RDS
+        VpcId:
+          Ref: VPC
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 3306
+            ToPort: 3306
+            SourceSecurityGroupId:
+              Ref: LambdaExecutionSecurityGroup
+          - IpProtocol: tcp
+            FromPort: 3306
+            ToPort: 3306
+            SourceSecurityGroupId:
+              Ref: DBGatewaySecurityGroup
+    RDSCluster:
+      Type: AWS::RDS::DBCluster
+      Properties:
+        Engine: aurora-postgresql
+        DBClusterParameterGroupName: default.aurora-postgresql9.6
+        MasterUsername: ${self:custom.dbUsername}
+        MasterUserPassword: ${self:custom.dbPassword}
+        DatabaseName: ${self:custom.dbName}
+        BackupRetentionPeriod: 30
+        PreferredBackupWindow: 01:00-02:00
+        PreferredMaintenanceWindow: mon:03:00-mon:04:00
+        DBSubnetGroupName:
+          Ref: RDSSubnetGroup
+        VpcSecurityGroupIds:
+          - 'Fn::GetAtt': RDSSecurityGroup.GroupId
+    DBInstance:
+      Type: AWS::RDS::DBInstance
+      Properties:
+        AllowMajorVersionUpgrade: false
+        AutoMinorVersionUpgrade: true
+        DBClusterIdentifier:
+          Ref: RDSCluster
+        DBInstanceClass: db.r4.large
+        DBParameterGroupName: default.aurora-postgresql9.6
+        DBSubnetGroupName:
+          Ref: RDSSubnetGroup
+        Engine: aurora-postgresql
+    DBGateway:
+      Type: AWS::ECS::TaskDefinition
+      Properties:
+        Cpu: 256
+        ExecutionRoleArn: ecsTaskExecutionRole
+        Family: DBGateway
+        Memory: 0.5GB
+        NetworkMode: awsvpc
+        RequiresCompatibilities:
+          - FARGATE
+        TaskRoleArn: ecsTaskExecutionRole
+        ContainerDefinitions:
+          - Name: DBGateway
+            Image:
+              Fn::Join: ['', [{Ref: 'AWS::AccountId'}, '.dkr.ecr.', {Ref: 'AWS::Region'}, '.amazonaws.com/storystore:ssh']]
+            LogConfiguration:
+              LogDriver: awslogs
+              Options:
+                awslogs-group:
+                  Ref: ApiLogGroup
+                awslogs-region:
+                  Ref: AWS::Region
+                awslogs-stream-prefix: DBGateway

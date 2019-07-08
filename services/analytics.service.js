@@ -31,7 +31,26 @@ module.exports = class Analytics {
 					console.log(err);
 					reject(err);
 				}
-				console.log('checkout complete');
+				resolve();
+			});
+		});
+	}
+	checkoutBegin(storeSlug, influencer) {
+		return new Promise((resolve, reject) => {
+			const eventParams = {
+				// hitType: 'event',
+				eventCategory: storeSlug + '__checkout',
+				eventAction: 'checkout__begin',
+				eventLabel: influencer,
+				// eventValue: 'aaaa',
+			};
+
+			this.visitor.event(eventParams, function(err) {
+				if (err) {
+					console.log(err);
+					reject(err);
+				}
+				console.log('checkout begin');
 				resolve();
 			});
 		});

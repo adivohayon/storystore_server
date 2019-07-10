@@ -84,6 +84,23 @@ module.exports = (
 		}
 	});
 
+	app.post('/import/categories', async (req, res) => {
+		try {
+			const { baseUrl, username, password, storeId } = req.body;
+			if (!baseUrl || !username || !password || !Number.isInteger(storeId)) {
+				throw new Error('Missing or invalid arguments');
+			}
+			const WooCommerce = require('../connectors/woocommerce.connector');
+			const wooCommerce = new WooCommerce(baseUrl, username, password);
+			const token = await wooCommerce.getToken();
+			const categories = await wooCommerce.listAllCategories();
+			return res.send(categories);
+		} catch (err) {
+			console.error(err);
+			return res.sendStatus(500).send(err.toString());
+		}
+	});
+
 	app.post('/categories', async (req, res) => {
 		const { slug, label, storeId } = req.body;
 		if (!slug || !label) {

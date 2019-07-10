@@ -108,6 +108,17 @@ module.exports = class WooCommerce {
 				throw new Error(err.toString());
 			});
 	}
+	
+	// DANA CATEGORY TEST
+	listAllCategories() {
+		const endpoint = this.baseURL + '/wp-json/wc/v3/products/categories';
+		return axios
+			.get(endpoint, this.getHeaders())
+			.then(resp => resp.data)
+			.catch(err => {
+				throw new Error(err.toString());
+			});
+	}
 	// END CATALOG
 
 	getSimpleItemPropertyId(Item_Property) {

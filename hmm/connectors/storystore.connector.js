@@ -1,31 +1,54 @@
 module.exports = class Storystore {
-	constructor(StoreModel, ShelfModel, VariationModel, AttributeModel, CategoryModel) {
+	constructor(
+		StoreModel,
+		ShelfModel,
+		VariationModel,
+		AttributeModel,
+		CategoryModel
+	) {
 		this.Store = StoreModel;
 		this.Shelf = ShelfModel;
 		this.Variation = VariationModel;
 		this.Attribute = AttributeModel;
 		this.Category = CategoryModel;
+		this.externalToDbCategoriesMap = {};
 	}
 
 	// InjectCategories
-	async injectCategory(category, storeId) {
+	async injectCategory(category, storeId, parentId = 0, dbShelf) {
 		try {
+			console.log('inject category', category);
 			const [dbCategory] = await this.Category.findCreateFind({
 				where: { slug: category.slug, StoreId: storeId },
 				defaults: {
 					slug: category.slug,
-					label: category.name ? category.name.trim() : '',
-					parent_id: category.parent_id ? category.parent_id.trim() : '',
-					external_id: category.external_id ? category.external_id.trim() : '',
+					label: category.label ? category.label.trim() : '',
+					parent_id: parentId,
+					external_id: Number(category.external_id),
 				},
 			});
+
+			// if (dbShelf) {
+			// 	await dbShelf.addCategory(dbCategory, {
+			// 		through: { external_id:  Number(category.external_id) || null },
+			// 	});
+			// }
+
 			return dbCategory;
 		} catch (err) {
 			console.error('Storystore Connector / injectCategory', err.toString());
 		}
 	}
 
-	async injectItem(storeId, shelf, variation, attribute, externalId) {
+	async injectItem(
+		storeId,
+		shelf,
+		variation,
+		attribute,
+		externalId,
+		categories,
+		categoriesExternalToDbMap
+	) {
 		try {
 			const dbShelf = await this.injectShelf(shelf, storeId);
 			const dbVariation = await this.injectVariation(variation, dbShelf.id);
@@ -43,6 +66,22 @@ module.exports = class Storystore {
 					dbVariation
 				);
 				toReturn.dbAttribute = dbAttribute;
+			}
+
+			if (categories && categories.length > 0) {
+				for (const category of categories) {
+					const dbCategory = await this.injectCategory(
+						category,
+						storeId,
+						category.parent_id
+					);
+					await dbShelf.addCategory(dbCategory, {
+						through: { external_id: Number(category.external_id) || null },
+					});
+				}
+				// categoriesIds.forEach(categoryId) {
+
+				// }
 			}
 
 			return toReturn;
@@ -116,8 +155,6 @@ module.exports = class Storystore {
 			await dbVariation.addAttribute(dbAttribute, {
 				through: { external_id: externalId || null },
 			});
-
-
 
 			// if (isCreated) {
 

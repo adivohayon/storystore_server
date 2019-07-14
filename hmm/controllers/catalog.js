@@ -30,15 +30,49 @@ module.exports = (
 			const WooCommerce = require('../connectors/woocommerce.connector');
 			const wooCommerce = new WooCommerce(baseUrl, username, password);
 			const token = await wooCommerce.getToken();
-			const products = await wooCommerce.listProducts('simple');
 
-			// return res.json(products[0]);
+			// Get storystore category
+			const categories = await wooCommerce.listCategories();
+			const wcParentCategoryId =
+				wooCommerce.getCategoryBySlug('shop', categories).id || null; // change this to storystore
+
+			if (!wcParentCategoryId) {
+				throw new Error(`Could not find category 'storystore'`);
+			}
+
 			const storystoreConnector = new StorystoreConnector(
 				Store,
 				Shelf,
 				Variation,
-				Attribute
+				Attribute,
+				Category
 			);
+
+			const wcCategories = wooCommerce.getCategoryChildren(
+				wcParentCategoryId,
+				categories
+			);
+			const categoriesExternalToDbMap = {};
+			// return res.json(parentCategories);
+			console.log('parentCategories', wcCategories);
+			for (const wcCategory of wcCategories) {
+				const parsedCategory = wooCommerce.parseCategory(wcCategory);
+				const dbCategory = await storystoreConnector.injectCategory(
+					parsedCategory,
+					storeId
+				);
+				categoriesExternalToDbMap[wcCategory.id] = dbCategory.id;
+			}
+
+			// Get storystore subcategories
+			const products = await wooCommerce.listProducts(
+				'simple',
+				wcParentCategoryId
+			);
+
+			// return res.json(products[0]);
+			// return res.json(products);
+
 			let numberOfInjectedProducts = 0;
 			for (const product of products) {
 				try {
@@ -56,18 +90,26 @@ module.exports = (
 						};
 					}
 
+					const productCategories = product.categories
+						.filter(category => category.id !== wcParentCategoryId)
+						.map(wooCommerce.parseCategory);
+
+						// return res.json(categoriesIds);
+						// continue;
 					const { dbShelf, dbVariation } = await storystoreConnector.injectItem(
 						storeId,
 						shelf,
 						variation,
 						attribute,
-						product.id
+						product.id,
+						productCategories,
+						categoriesExternalToDbMap
 					);
-
+					
 					console.log(
 						'---- Item injected ----',
 						`shelfId: ${dbShelf.id},  variationId: ${dbVariation.id},  ${
-						dbShelf.slug
+							dbShelf.slug
 						} - ${dbVariation.slug}`
 					);
 					numberOfInjectedProducts++;
@@ -107,9 +149,7 @@ module.exports = (
 			let numberOfInjectedCategories = 0;
 			for (const wcCategory of wcCategories) {
 				try {
-					const category = await wooCommerce.parseCategory(
-						wcCategory
-					);
+					const category = await wooCommerce.parseCategory(wcCategory);
 
 					const dbCategory = await storystoreConnector.injectCategory(
 						storeId,
@@ -129,7 +169,6 @@ module.exports = (
 			}
 
 			return res.send(`${numberOfInjectedCategories} Categories injected`);
-
 		} catch (err) {
 			console.error(err);
 			return res.sendStatus(500).send(err.toString());

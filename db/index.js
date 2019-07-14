@@ -3,7 +3,8 @@ const require_all = require('require-all');
 const Sequelize = require('sequelize');
 
 // TO DO: check why const dbUrl = process.env.DATABASE_URL; returns object and not string
-const dbUrl = 'postgres://danaweingart:localpass@localhost/storystore';
+const dbUrl = process.env.DATABASE_URL;
+// const dbUrl = 'postgres://danaweingart:localpass@localhost/storystore';
 console.log('dbUrl', process.env.DATABASE_URL);
 const sequelize = (module.exports = new Sequelize(dbUrl, {
 	operatorsAliases: false,

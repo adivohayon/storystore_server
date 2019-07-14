@@ -80,16 +80,21 @@ module.exports = class WooCommerce {
 	// END TOKEN
 
 	// BEGIN CATALOG
-	listProducts(type, perPage = 100, page = 1, onlyInStock = true) {
+	listProducts(type, categoryId, perPage = 100, page = 1, onlyInStock = true) {
 		let query = `?per_page=${perPage}&page=${page}`;
 		if (type) {
 			query += `&type=${type}`;
 		}
+		if (categoryId) {
+			query += `&category=${categoryId}`;
+		}
+
 		if (onlyInStock) {
 			query += `&stock_status=instock`;
 		}
 
-		const endpoint = this.baseURL + '/wp-json/wc/v3/products' + query;
+		const endpoint = this.baseURL + 'wp-json/wc/v3/products' + query;
+		console.log('endpoit', endpoint);
 		return axios
 			.get(endpoint, this.getHeaders())
 			.then(resp => resp.data)
@@ -108,8 +113,8 @@ module.exports = class WooCommerce {
 				throw new Error(err.toString());
 			});
 	}
-	
-	listAllCategories() {
+
+	listCategories() {
 		const endpoint = this.baseURL + '/wp-json/wc/v3/products/categories';
 		return axios
 			.get(endpoint, this.getHeaders())
@@ -118,6 +123,17 @@ module.exports = class WooCommerce {
 				throw new Error(err.toString());
 			});
 	}
+
+	getCategoryChildren(parentId, categories) {
+		return (
+			categories.filter(category => category.parent === Number(parentId)) || []
+		);
+	}
+
+	getCategoryBySlug(categorySlug, categories) {
+		return categories.find(category => category.slug === categorySlug);
+	}
+
 	// END CATALOG
 
 	getSimpleItemPropertyId(Item_Property) {
@@ -174,21 +190,19 @@ module.exports = class WooCommerce {
 	}
 
 	parseCategory(wcCategory) {
-		return new Promise(async (resolve, reject) => {
-			if (!wcCategory) {
-				reject('Missing product');
-			}
+		if (!wcCategory) {
+			throw new Error('Missing product');
+		}
 
-			const category = {
-				slug: wcCategory.slug,
-				label: wcCategory.name,
-				parent_id: wcCategory.parent,
-				external_id: wcCategory.id,
-			};
+		const category = {
+			slug: wcCategory.slug,
+			label: wcCategory.name,
+			parent_id: 0,
+			external_id: wcCategory.id,
+		};
 
-			resolve({ category });
-		});
+		return category;
 	}
 
-		// END PARSING
+	// END PARSING
 };

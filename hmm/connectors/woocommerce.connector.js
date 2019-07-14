@@ -109,7 +109,6 @@ module.exports = class WooCommerce {
 			});
 	}
 	
-	// DANA CATEGORY TEST
 	listAllCategories() {
 		const endpoint = this.baseURL + '/wp-json/wc/v3/products/categories';
 		return axios
@@ -173,5 +172,23 @@ module.exports = class WooCommerce {
 			resolve({ shelf, variation });
 		});
 	}
-	// END PARSING
+
+	parseCategory(wcCategory) {
+		return new Promise(async (resolve, reject) => {
+			if (!wcCategory) {
+				reject('Missing product');
+			}
+
+			const category = {
+				slug: wcCategory.slug,
+				label: wcCategory.name,
+				parent_id: wcCategory.parent,
+				external_id: wcCategory.id,
+			};
+
+			resolve({ category });
+		});
+	}
+
+		// END PARSING
 };

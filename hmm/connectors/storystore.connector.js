@@ -1,9 +1,28 @@
 module.exports = class Storystore {
-	constructor(StoreModel, ShelfModel, VariationModel, AttributeModel) {
+	constructor(StoreModel, ShelfModel, VariationModel, AttributeModel, CategoryModel) {
 		this.Store = StoreModel;
 		this.Shelf = ShelfModel;
 		this.Variation = VariationModel;
 		this.Attribute = AttributeModel;
+		this.Category = CategoryModel;
+	}
+
+	// InjectCategories
+	async injectCategory(category, storeId) {
+		try {
+			const [dbCategory] = await this.Category.findCreateFind({
+				where: { slug: category.slug, StoreId: storeId },
+				defaults: {
+					slug: category.slug,
+					label: category.name ? category.name.trim() : '',
+					parent_id: category.parent_id ? category.parent_id.trim() : '',
+					external_id: category.external_id ? category.external_id.trim() : '',
+				},
+			});
+			return dbCategory;
+		} catch (err) {
+			console.error('Storystore Connector / injectCategory', err.toString());
+		}
 	}
 
 	async injectItem(storeId, shelf, variation, attribute, externalId) {
@@ -25,7 +44,7 @@ module.exports = class Storystore {
 				);
 				toReturn.dbAttribute = dbAttribute;
 			}
-		
+
 			return toReturn;
 		} catch (err) {
 			console.error('Storystore Connector / injectItem', err.toString());
@@ -97,11 +116,11 @@ module.exports = class Storystore {
 			await dbVariation.addAttribute(dbAttribute, {
 				through: { external_id: externalId || null },
 			});
-			
+
 
 
 			// if (isCreated) {
-			
+
 			// } else {
 			// 	const hasAttribute = dbVariation.hasAttribute(dbAttribute);
 			// 	if (!hasAttribute) {

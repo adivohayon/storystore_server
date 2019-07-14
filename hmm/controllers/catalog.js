@@ -20,6 +20,7 @@ module.exports = (
 	app.get('/import', async (req, res) => {
 		res.render('catalog/import');
 	});
+
 	app.post('/import/woocommerce', async (req, res) => {
 		try {
 			const { baseUrl, username, password, storeId } = req.body;
@@ -66,7 +67,7 @@ module.exports = (
 					console.log(
 						'---- Item injected ----',
 						`shelfId: ${dbShelf.id},  variationId: ${dbVariation.id},  ${
-							dbShelf.slug
+						dbShelf.slug
 						} - ${dbVariation.slug}`
 					);
 					numberOfInjectedProducts++;
@@ -93,8 +94,42 @@ module.exports = (
 			const WooCommerce = require('../connectors/woocommerce.connector');
 			const wooCommerce = new WooCommerce(baseUrl, username, password);
 			const token = await wooCommerce.getToken();
-			const categories = await wooCommerce.listAllCategories();
-			return res.send(categories);
+			const wcCategories = await wooCommerce.listAllCategories();
+
+			const storystoreConnector = new StorystoreConnector(
+				Store,
+				Shelf,
+				Variation,
+				Attribute,
+				Category
+			);
+
+			let numberOfInjectedCategories = 0;
+			for (const wcCategory of wcCategories) {
+				try {
+					const category = await wooCommerce.parseCategory(
+						wcCategory
+					);
+
+					const dbCategory = await storystoreConnector.injectCategory(
+						storeId,
+						category
+					);
+
+					console.log(
+						'---- Item injected ----',
+						`categoryId: ${dbCategory.id}, ${dbCategory.slug}`
+					);
+					numberOfInjectedCategories++;
+				} catch (err) {
+					console.error('#### Category NOT injected ####', err.toString());
+					continue;
+				}
+				// parsedProducts.push(wooCommerce.parseProduct(product, Item_Property));
+			}
+
+			return res.send(`${numberOfInjectedCategories} Categories injected`);
+
 		} catch (err) {
 			console.error(err);
 			return res.sendStatus(500).send(err.toString());

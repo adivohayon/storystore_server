@@ -7,6 +7,7 @@ module.exports = (sequelize, Sequelize) => {
 			slug: { type: Sequelize.STRING },
 			label: { type: Sequelize.STRING },
 			parent_id: { type: Sequelize.INTEGER, defaultValue: 0 },
+			external_id: { type: Sequelize.INTEGER, defaultValue: 0 },
 		},
 		{
 			// name: {
@@ -17,7 +18,7 @@ module.exports = (sequelize, Sequelize) => {
 		}
 	);
 
-	model.associate = function({ Shelf, Store }) {
+	model.associate = function ({ Shelf, Store }) {
 		this.belongsTo(Store);
 		this.belongsToMany(Shelf, {
 			as: 'shelves',

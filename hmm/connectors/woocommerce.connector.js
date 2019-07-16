@@ -93,7 +93,7 @@ module.exports = class WooCommerce {
 			query += `&stock_status=instock`;
 		}
 
-		const endpoint = this.baseURL + 'wp-json/wc/v3/products' + query;
+		const endpoint = this.baseURL + '/wp-json/wc/v3/products' + query;
 		console.log('endpoit', endpoint);
 		return axios
 			.get(endpoint, this.getHeaders())
@@ -172,14 +172,60 @@ module.exports = class WooCommerce {
 			};
 			const assets = _.uniqBy(product.images, 'id').map(image => image.src);
 
+			const Cloudinary = require('../connectors/cloudinary.connector');
+			const cloudinary = new Cloudinary('storystore', 'mikibuganim');
+			const prefix = 'https://shop.mikibuganim.com/wp-content/uploads/';
+
+			console.log('woocommerce connector / parseProduct / assets', assets);
+
+			// const cloudinaryAssets = Promise.all(
+			// 	assets.map(asset => {
+			// 		cloudinary.autoUploadImage(asset);
+			// 	})
+			// );
+
+			// const cloudinaryAssets = assets.map(asset => {
+			// 	cloudinary
+			// 		.autoUploadImage(asset)
+			// 		.then(resp => console.log('$$$resp', resp));
+			// });
+
+			const cloudinaryAssets = [];
+			for (const asset of assets) {
+				try {
+					const cloudinaryAsset = await cloudinary.autoUploadImage(
+						'miki',
+						product.name,
+						asset
+					);
+					cloudinaryAssets.push(cloudinaryAsset);
+				} catch (err) {
+					console.log(
+						'woocommerce connector / parseProduct / autoUploadImage',
+						err
+					);
+					continue;
+				}
+			}
+
+			console.log(
+				'woocommerce connector / parseProduct / cloudinaryAssets',
+				cloudinaryAssets
+			);
+
 			const variation = {
 				slug: '',
 				price: product.regular_price,
 				sale_price: product.sale_price,
 				itemPropertyId,
-				assets,
+				assets: cloudinaryAssets,
 				product_url: productUrl,
 			};
+
+			console.log(
+				'woocommerce connector / parseProduct / variation',
+				variation
+			);
 
 			if (product.type === 'simple') {
 				variation.slug = product.slug;

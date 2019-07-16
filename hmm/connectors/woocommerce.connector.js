@@ -147,7 +147,7 @@ module.exports = class WooCommerce {
 		}
 	}
 	// BEGIN PARSING
-	parseProduct(product, Item_Property) {
+	parseProduct(product, Item_Property, storeSlug) {
 		return new Promise(async (resolve, reject) => {
 			if (!product) {
 				reject('Missing product');
@@ -173,28 +173,16 @@ module.exports = class WooCommerce {
 			const assets = _.uniqBy(product.images, 'id').map(image => image.src);
 
 			const Cloudinary = require('../connectors/cloudinary.connector');
-			const cloudinary = new Cloudinary('storystore', 'mikibuganim');
-			const prefix = 'https://shop.mikibuganim.com/wp-content/uploads/';
+			const cloudinary = new Cloudinary();
+			// const prefix = 'https://shop.mikibuganim.com/wp-content/uploads/';
 
 			console.log('woocommerce connector / parseProduct / assets', assets);
-
-			// const cloudinaryAssets = Promise.all(
-			// 	assets.map(asset => {
-			// 		cloudinary.autoUploadImage(asset);
-			// 	})
-			// );
-
-			// const cloudinaryAssets = assets.map(asset => {
-			// 	cloudinary
-			// 		.autoUploadImage(asset)
-			// 		.then(resp => console.log('$$$resp', resp));
-			// });
 
 			const cloudinaryAssets = [];
 			for (const asset of assets) {
 				try {
 					const cloudinaryAsset = await cloudinary.autoUploadImage(
-						'miki',
+						storeSlug,
 						product.name,
 						asset
 					);

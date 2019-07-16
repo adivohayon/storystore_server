@@ -5,23 +5,20 @@ cloudinary.config({
 	api_secret: 'BlziThGcoM8DzWgapIQoAMwJWBM',
 });
 module.exports = class Cloudinary {
-	constructor(cloudName, mappedFolder) {
-		this.cloudName = cloudName;
-		this.mappedFolder = mappedFolder;
-	}
+	constructor() {}
 
 	async autoUploadImage(storeFolder, productName, imageUrl) {
 		try {
-			// const uploadedImage = await cloudinary.image(
-			// 	this.mappedFolder + '/' + remoteResourcePath
-			// );
 			console.log(
 				'cloudinary connector / autoUploadImage / imageUrl',
 				imageUrl
 			);
 			const uploadedImage = await cloudinary.uploader.upload(imageUrl, {
-				public_id: storeFolder + '/' + productName,
-				eager: [{ width: 562, height: 1000, crop: 'crop', gravity: 'auto' }],
+				public_id: storeFolder + '/' + productName + '/' + productName,
+				eager: [
+					{ width: 562, height: 1000, crop: 'lfill', gravity: 'auto:object' },
+				],
+				invalidate: true,
 			});
 			return uploadedImage['secure_url'];
 		} catch (err) {

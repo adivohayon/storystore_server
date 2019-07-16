@@ -73,12 +73,15 @@ module.exports = (
 			// return res.json(products[0]);
 			// return res.json(products);
 
+			const store = await Store.findOne({ where: { id: storeId } });
+			console.log('catalog / import/woocommerce / storeSlug', store.slug);
 			let numberOfInjectedProducts = 0;
 			for (const product of products) {
 				try {
 					const { shelf, variation } = await wooCommerce.parseProduct(
 						product,
-						Item_Property
+						Item_Property,
+						store.slug
 					);
 
 					let attribute;
@@ -94,8 +97,8 @@ module.exports = (
 						.filter(category => category.id !== wcParentCategoryId)
 						.map(wooCommerce.parseCategory);
 
-						// return res.json(categoriesIds);
-						// continue;
+					// return res.json(categoriesIds);
+					// continue;
 					const { dbShelf, dbVariation } = await storystoreConnector.injectItem(
 						storeId,
 						shelf,
@@ -105,7 +108,7 @@ module.exports = (
 						productCategories,
 						categoriesExternalToDbMap
 					);
-					
+
 					console.log(
 						'---- Item injected ----',
 						`shelfId: ${dbShelf.id},  variationId: ${dbVariation.id},  ${

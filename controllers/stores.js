@@ -39,6 +39,7 @@ module.exports = (
 		Attribute,
 		Item_Property,
 		Category,
+		Category_Shelf,
 		Influencer,
 	}
 ) => {
@@ -111,7 +112,10 @@ module.exports = (
 											attributes: ['type', 'label'],
 										},
 									],
-									through: { attributes: ['id', 'external_id'], as: 'variationAttribute' },
+									through: {
+										attributes: ['id', 'external_id'],
+										as: 'variationAttribute',
+									},
 								},
 								{
 									model: Item_Property,
@@ -145,67 +149,29 @@ module.exports = (
 
 	app.get('/:storeId/categories/:category_slug', async (req, res) => {
 		try {
-			if (!req.params.category_slug) {
-				throw new Error('No category slug provided');
+			if (!req.params.category_slug || !req.params.storeId) {
+				throw new Error('Missing params');
 			}
 
-			const shelfInclude = [
-				{
-					model: Shelf,
-					as: 'shelves',
-					include: [
-						{
-							model: Variation,
-							as: 'variations',
-							attributes: [
-								['id', 'variationId'],
-								'slug',
-								'price',
-								'sale_price',
-								'currency',
-								'property_label',
-								'property_value',
-								'assets',
-								'variation_order',
-								'ShelfId',
-								'variation_info',
-							],
-							include: [
-								{
-									model: Attribute,
-									as: 'attributes',
-									attributes: ['label', 'value'],
-									include: [
-										{
-											model: Item_Property,
-											as: 'itemProperty',
-											attributes: ['type', 'label'],
-										},
-									],
-									through: { attributes: ['id'], as: 'variationAttribute' },
-								},
-								{
-									model: Item_Property,
-									as: 'itemProperty',
-									attributes: ['type', 'label'],
-								},
-							],
-						},
-					],
-				},
-			];
-
-			const rootCategory = await Category.findOne({
-				where: { slug: req.params.category_slug },
-				include: shelfInclude,
+			const allCategories = await Category.findAll({
+				where: { StoreId: req.params.storeId },
 			});
-			// retyrb res.json(rootCategory);
 
-			const subcategories = await Category.findAll({
-				where: { parent_id: rootCategory.id },
-				include: shelfInclude,
-			});
-			return res.json([rootCategory, ...subcategories]);
+			const firstCategory = allCategories.find(
+				category => category.slug === req.params.category_slug
+			);
+
+			const subCategories = allCategories.filter(
+				category => category.parent_id === firstCategory.id
+			);
+
+			const restOfCategories = allCategories.filter(
+				category =>
+					category.parent_id !== firstCategory.id &&
+					category.slug !== firstCategory.slug
+			);
+
+			return res.json({ firstCategory, subCategories, restOfCategories });
 		} catch (err) {
 			console.error(err);
 		}
@@ -266,7 +232,10 @@ module.exports = (
 									attributes: ['type', 'label'],
 								},
 							],
-							through: { attributes: ['id', 'external_id'], as: 'variationAttribute' },
+							through: {
+								attributes: ['id', 'external_id'],
+								as: 'variationAttribute',
+							},
 						},
 						{
 							model: Item_Property,
@@ -274,6 +243,13 @@ module.exports = (
 							attributes: ['type', 'label'],
 						},
 					],
+				},
+				{
+					model: Category,
+					// through: {}
+					through: { attributes: [] },
+					// as: 'Category_Shelf',
+					attributes: ['id'],
 				},
 			],
 		});

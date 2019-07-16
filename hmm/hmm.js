@@ -42,7 +42,7 @@ for (const [name, controller] of Object.entries(
 )) {
 	let router = express.Router();
 	let { admin } = controller(router, app.get('db')) || {};
-	app.use(`/${name}`, router);
+	app.use(`/hmm/${name}`, router);
 }
 
 app.use((err, req, res, next) => {

@@ -10,6 +10,7 @@
 		"offline": "$(npm bin)/sls offline start --noTimeout --host 0.0.0.0",
 		"deploy": "NODE_ENV=production $(npm bin)/sls deploy",
 		"hmm": "cd ./hmm && $(npm bin)/sls offline start --noTimeout --host 0.0.0.0 --port 5000",
+		"deploy:hmm": "cd ./hmm && NODE_ENV=production $(npm bin)/sls deploy",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"repository": {

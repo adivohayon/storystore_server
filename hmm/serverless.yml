@@ -2,11 +2,11 @@ service: storystore-hmm
 package:
   individually: true
   exclude:
-  - .git/**
-  - .vscode/**
-  - .env.development
-  - controllers/**
-  - payment-providers/**
+    - .git/**
+    - .vscode/**
+    - .env.development
+    - controllers/**
+    - payment-providers/**
 
 functions:
   hmm:
@@ -114,7 +114,7 @@ resources:
           - IpProtocol: tcp
             FromPort: 22
             ToPort: 22
-            CidrIp: "0.0.0.0/0"
+            CidrIp: '0.0.0.0/0'
     RDSSecurityGroup:
       Type: AWS::EC2::SecurityGroup
       Properties:
@@ -173,7 +173,16 @@ resources:
         ContainerDefinitions:
           - Name: DBGateway
             Image:
-              Fn::Join: ['', [{Ref: 'AWS::AccountId'}, '.dkr.ecr.', {Ref: 'AWS::Region'}, '.amazonaws.com/storystore:ssh']]
+              Fn::Join:
+                [
+                  '',
+                  [
+                    { Ref: 'AWS::AccountId' },
+                    '.dkr.ecr.',
+                    { Ref: 'AWS::Region' },
+                    '.amazonaws.com/storystore:ssh',
+                  ],
+                ]
             LogConfiguration:
               LogDriver: awslogs
               Options:

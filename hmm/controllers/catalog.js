@@ -47,6 +47,8 @@ module.exports = (
 				Attribute,
 				Category
 			);
+			const Cloudinary = require('../connectors/cloudinary.connector');
+			const cloudinary = new Cloudinary();
 
 			const wcCategories = wooCommerce.getCategoryChildren(
 				wcParentCategoryId,
@@ -54,7 +56,7 @@ module.exports = (
 			);
 			const categoriesExternalToDbMap = {};
 			// return res.json(parentCategories);
-			console.log('parentCategories', wcCategories);
+			// console.log('parentCategories', wcCategories);
 			for (const wcCategory of wcCategories) {
 				const parsedCategory = wooCommerce.parseCategory(wcCategory);
 				const dbCategory = await storystoreConnector.injectCategory(
@@ -78,12 +80,14 @@ module.exports = (
 			let numberOfInjectedProducts = 0;
 			for (const product of products) {
 				try {
-					const { shelf, variation } = await wooCommerce.parseProduct(
+					// Parse product to shelf and variation
+					const { shelf, variation, assets } = await wooCommerce.parseProduct(
 						product,
 						Item_Property,
 						store.slug
 					);
 
+					// Handle attribute
 					let attribute;
 					if (product.type === 'simple') {
 						attribute = {
@@ -93,12 +97,36 @@ module.exports = (
 						};
 					}
 
+					// Handle assets
+					const cloudinaryAssets = [];
+					for (const [assetIndex, assetUrl] of assets.entries()) {
+						try {
+							const cloudinaryAsset = await cloudinary.uploadImageFromUrl(
+								assetUrl,
+								store.slug,
+								shelf.slug,
+								variation.slug,
+								assetIndex
+							);
+							cloudinaryAssets.push(cloudinaryAsset);
+						} catch (err) {
+							console.log('ERROR :::: Cloudinary Upload Failed', err);
+							continue;
+						}
+					}
+
+					variation.assets = cloudinaryAssets;
+					console.log(
+						'IMPORT WOOCOMMERCE / product / variation assets',
+						variation.assets
+					);
+
+					// Get categories
 					const productCategories = product.categories
 						.filter(category => category.id !== wcParentCategoryId)
 						.map(wooCommerce.parseCategory);
 
-					// return res.json(categoriesIds);
-					// continue;
+					// Inject shelf and variation to DB
 					const { dbShelf, dbVariation } = await storystoreConnector.injectItem(
 						storeId,
 						shelf,
@@ -159,10 +187,10 @@ module.exports = (
 						category
 					);
 
-					console.log(
-						'---- Item injected ----',
-						`categoryId: ${dbCategory.id}, ${dbCategory.slug}`
-					);
+					// console.log(
+					// 	'---- Item injected ----',
+					// 	`categoryId: ${dbCategory.id}, ${dbCategory.slug}`
+					// );
 					numberOfInjectedCategories++;
 				} catch (err) {
 					console.error('#### Category NOT injected ####', err.toString());

@@ -260,7 +260,7 @@ module.exports = (
 		for (const shelf of shelves) {
 			for (const variation of shelf.variations) {
 				variation.assets = variation.assets.map(asset => ({
-					src: `${shelf.slug}/${variation.slug}/${asset}`,
+					src: asset,
 					loaded: false,
 				}));
 			}

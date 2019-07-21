@@ -17,7 +17,7 @@ module.exports = class Storystore {
 	// InjectCategories
 	async injectCategory(category, storeId, parentId = 0, dbShelf) {
 		try {
-			console.log('inject category', category);
+			// console.log('inject category', category);
 			const [dbCategory] = await this.Category.findCreateFind({
 				where: { slug: category.slug, StoreId: storeId },
 				defaults: {
@@ -52,6 +52,12 @@ module.exports = class Storystore {
 		try {
 			const dbShelf = await this.injectShelf(shelf, storeId);
 			const dbVariation = await this.injectVariation(variation, dbShelf.id);
+
+			console.log(
+				'STORYSTORE CONNECTOR / injectItem / dbVariation injected',
+				dbVariation.assets
+			);
+
 			const toReturn = {
 				dbShelf,
 				dbVariation,
@@ -86,7 +92,7 @@ module.exports = class Storystore {
 
 			return toReturn;
 		} catch (err) {
-			console.error('Storystore Connector / injectItem', err.toString());
+			console.error('ERROR :: STORYSTORE CONNECTOR / injectItem', err.toString());
 		}
 	}
 

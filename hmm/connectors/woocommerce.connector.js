@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const axios = require('axios');
+
 module.exports = class WooCommerce {
 	constructor(baseUrl, username, password, token) {
 		this.baseURL = baseUrl;
@@ -146,11 +147,20 @@ module.exports = class WooCommerce {
 			}).then(resp => resp.id);
 		}
 	}
+
+	slugify(str) {
+		return decodeURI(str);
+	}
+
 	// BEGIN PARSING
 	parseProduct(product, Item_Property, storeSlug) {
 		return new Promise(async (resolve, reject) => {
 			if (!product) {
 				reject('Missing product');
+			}
+
+			if (!product.slug) {
+				reject('No product slug - ' + product.permalink);
 			}
 
 			let itemPropertyId;
@@ -162,64 +172,38 @@ module.exports = class WooCommerce {
 				reject('Could not find itemPropertyId');
 			}
 
-			const productUrl = _.get(product, '_links.self[0].href', '');
+			// console.log('product', product)
+			const productUrl = _.get(product, 'permalink', '');
 
 			const shelf = {
-				slug: product.slug,
+				slug: this.slugify(product.slug),
 				name: product.name,
 				description: product.short_description,
 				info: product.description,
 			};
+
+			console.log('#################', shelf.slug);
 			const assets = _.uniqBy(product.images, 'id').map(image => image.src);
 
-			const Cloudinary = require('../connectors/cloudinary.connector');
-			const cloudinary = new Cloudinary();
-			// const prefix = 'https://shop.mikibuganim.com/wp-content/uploads/';
-
-			console.log('woocommerce connector / parseProduct / assets', assets);
-
-			const cloudinaryAssets = [];
-			for (const asset of assets) {
-				try {
-					const cloudinaryAsset = await cloudinary.autoUploadImage(
-						storeSlug,
-						product.name,
-						asset
-					);
-					cloudinaryAssets.push(cloudinaryAsset);
-				} catch (err) {
-					console.log(
-						'woocommerce connector / parseProduct / autoUploadImage',
-						err
-					);
-					continue;
-				}
-			}
-
-			console.log(
-				'woocommerce connector / parseProduct / cloudinaryAssets',
-				cloudinaryAssets
-			);
-
 			const variation = {
-				slug: '',
+				slug: null,
 				price: product.regular_price,
 				sale_price: product.sale_price,
 				itemPropertyId,
-				assets: cloudinaryAssets,
+				// assets: cloudinaryAssets,
 				product_url: productUrl,
 			};
 
-			console.log(
-				'woocommerce connector / parseProduct / variation',
-				variation
-			);
+			// console.log(
+			// 	'woocommerce connector / parseProduct / variation',
+			// 	variation
+			// );
 
 			if (product.type === 'simple') {
-				variation.slug = product.slug;
+				variation.slug = this.slugify(product.slug);
 			}
 
-			resolve({ shelf, variation });
+			resolve({ shelf, variation, assets });
 		});
 	}
 
@@ -229,7 +213,7 @@ module.exports = class WooCommerce {
 		}
 
 		const category = {
-			slug: wcCategory.slug,
+			slug: wcCategory.slug ? decodeURI(wcCategory.slug) : null,
 			label: wcCategory.name,
 			parent_id: 0,
 			external_id: wcCategory.id,

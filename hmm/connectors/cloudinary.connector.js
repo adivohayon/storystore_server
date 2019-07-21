@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const cloudinary = require('cloudinary').v2;
 cloudinary.config({
 	cloud_name: 'storystore',
@@ -7,24 +8,55 @@ cloudinary.config({
 module.exports = class Cloudinary {
 	constructor() {}
 
-	async autoUploadImage(storeFolder, productName, imageUrl) {
+	async uploadImageFromUrl(
+		assetUrl,
+		storeSlug,
+		shelfSlug,
+		variationSlug,
+		assetIndex = 1
+	) {
 		try {
 			console.log(
-				'cloudinary connector / autoUploadImage / imageUrl',
-				imageUrl
+				'CLOUDINARY SERVICE / uploadImageFromUrl / assetUrl',
+				assetUrl
 			);
-			const uploadedImage = await cloudinary.uploader.upload(imageUrl, {
-				public_id: storeFolder + '/' + productName + '/' + productName,
-				eager: [
-					{ width: 562, height: 1000, crop: 'lfill', gravity: 'auto:object' },
-				],
+			
+			console.log(
+				'---------------------------------------------------------------------------'
+			);
+			const publicId = `${storeSlug}/${shelfSlug}/${variationSlug}/${assetIndex}`;
+			console.log('publicId length', publicId.length);
+			const uploadedImage = await cloudinary.uploader.upload(assetUrl, {
+				public_id: publicId,
+				eager: [{ width: 562, height: 1000, crop: 'lfill', gravity: 'auto' }],
 				invalidate: true,
 			});
-			return uploadedImage['secure_url'];
+
+			// console.log('uploadedImage', uploadedImage);
+	
+
+			let cloudinaryUrl;
+			if (uploadedImage['secure_url']) {
+				cloudinaryUrl = _.get(
+					uploadedImage,
+					'eager[0].secure_url',
+					uploadedImage['secure_url']
+				);
+			} else {
+				console.log('secure Url not found', uploadedImage);
+				throw new Error('secure Url not found');
+			}
+
+			console.log('cloudinaryUrl', cloudinaryUrl);
+			console.log('cloudinaryUrl length', cloudinaryUrl.length);
+			console.log(
+				'---------------------------------------------------------------------------'
+			);
+			return cloudinaryUrl;
 		} catch (err) {
 			console.error(
-				'Cloudinary Connector / autoUploadImage ERROR',
-				JSON.stringify(err)
+				'ERROR :: CLOUDINARY SERVICE / uploadImageFromUrl',
+				err.toString()
 			);
 		}
 	}

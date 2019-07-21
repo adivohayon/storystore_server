@@ -25,7 +25,7 @@ module.exports = (sequelize, Sequelize) => {
 			currency: { type: Sequelize.CHAR(3), defaultValue: 'ILS' },
 			property_label: Sequelize.STRING,
 			property_value: Sequelize.STRING,
-			assets: Sequelize.ARRAY(Sequelize.STRING),
+			assets: Sequelize.ARRAY(Sequelize.STRING(1024)),
 			variation_order: Sequelize.INTEGER,
 			product_url: Sequelize.STRING,
 			variation_info: Sequelize.TEXT,

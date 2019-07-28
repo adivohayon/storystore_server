@@ -149,13 +149,26 @@ module.exports = (
 
 	app.get('/:storeId/categories/:category_slug', async (req, res) => {
 		try {
-			if (!req.params.category_slug || !req.params.storeId) {
+			console.log('aaaaaa');
+			if (!req.params.storeId) {
 				throw new Error('Missing params');
 			}
+
+			console.log('req.params.category_slug', req.params.category_slug);
+			const categorySlug = req.params.category_slug || false;
 
 			const allCategories = await Category.findAll({
 				where: { StoreId: req.params.storeId },
 			});
+
+			if (!categorySlug || categorySlug === 'null') {
+				const obj = {
+					firstCategory: allCategories[0],
+					restOfCategories: allCategories.slice(1),
+					subCategories: [],
+				};
+				return res.json(obj);
+			}
 
 			const firstCategory = allCategories.find(
 				category => category.slug === req.params.category_slug

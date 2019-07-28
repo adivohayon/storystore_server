@@ -72,4 +72,17 @@ module.exports = class Cloudinary {
 			);
 		}
 	}
+
+	deleteAssetsFolder(storeSlug) {
+		return new Promise((resolve, reject) => {
+			cloudinary.api.delete_resources_by_prefix(
+				'mikibuganim',
+				(err, result) => {
+					if (err) reject(err);
+
+					resolve(result);
+				}
+			);
+		});
+	}
 };

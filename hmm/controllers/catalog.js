@@ -49,6 +49,13 @@ module.exports = (
 			);
 			const Cloudinary = require('../connectors/cloudinary.connector');
 			const cloudinary = new Cloudinary();
+			const store = await Store.findOne({ where: { id: storeId } });
+
+			if (req.body.deleteAssets) {
+				await cloudinary.deleteAssetsFolder(store.slug);
+				// return res.json('done');
+				// return;
+			}
 
 			const wcCategories = wooCommerce.getCategoryChildren(
 				wcParentCategoryId,
@@ -75,7 +82,7 @@ module.exports = (
 			// return res.json(products[0]);
 			// return res.json(products);
 
-			const store = await Store.findOne({ where: { id: storeId } });
+		
 			console.log('catalog / import/woocommerce / storeSlug', store.slug);
 			let numberOfInjectedProducts = 0;
 			for (const product of products) {

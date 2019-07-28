@@ -162,9 +162,17 @@ module.exports = (
 			});
 
 			if (!categorySlug || categorySlug === 'null') {
+				const storystoreCategoryIndex = allCategories.findIndex(
+					category => category.slug === 'storystore'
+				);
+				const firstCategory = allCategories[storystoreCategoryIndex];
+				const restOfCategories = allCategories.filter(
+					category => category.slug !== 'storystore'
+				);
+				
 				const obj = {
-					firstCategory: allCategories[0],
-					restOfCategories: allCategories.slice(1),
+					firstCategory,
+					restOfCategories,
 					subCategories: [],
 				};
 				return res.json(obj);

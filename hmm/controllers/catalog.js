@@ -115,7 +115,8 @@ module.exports = (
 						}
 					}
 
-					variation.assets = cloudinaryAssets;
+					variation.assets = [].concat.apply([], cloudinaryAssets);
+
 					console.log(
 						'IMPORT WOOCOMMERCE / product / variation assets',
 						variation.assets

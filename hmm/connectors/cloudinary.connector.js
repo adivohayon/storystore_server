@@ -20,7 +20,7 @@ module.exports = class Cloudinary {
 				'CLOUDINARY SERVICE / uploadImageFromUrl / assetUrl',
 				assetUrl
 			);
-			
+
 			console.log(
 				'---------------------------------------------------------------------------'
 			);
@@ -28,31 +28,43 @@ module.exports = class Cloudinary {
 			console.log('publicId length', publicId.length);
 			const uploadedImage = await cloudinary.uploader.upload(assetUrl, {
 				public_id: publicId,
-				eager: [{ width: 562, height: 1000, crop: 'lfill', gravity: 'auto' }],
+				eager: [
+					{
+						width: '720',
+						height: '1280',
+						crop: 'pad',
+						format: 'jpg',
+						flags: 'progressive',
+					},
+					{
+						width: '720',
+						height: '1280',
+						crop: 'pad',
+						format: 'webp',
+					},
+				],
 				invalidate: true,
 			});
 
-			// console.log('uploadedImage', uploadedImage);
-	
+			console.log('uploadedImage', uploadedImage);
 
-			let cloudinaryUrl;
-			if (uploadedImage['secure_url']) {
-				cloudinaryUrl = _.get(
-					uploadedImage,
-					'eager[0].secure_url',
-					uploadedImage['secure_url']
-				);
+			let cloudinaryUrls = [];
+			if (uploadedImage['eager']) {
+				for (let trans of uploadedImage['eager']) {
+					const cloudinaryUrl = _.get(trans, 'secure_url', null);
+					cloudinaryUrls.push(cloudinaryUrl);
+				}
 			} else {
 				console.log('secure Url not found', uploadedImage);
 				throw new Error('secure Url not found');
 			}
 
-			console.log('cloudinaryUrl', cloudinaryUrl);
-			console.log('cloudinaryUrl length', cloudinaryUrl.length);
+			console.log('cloudinaryUrl', cloudinaryUrls);
+			// console.log('cloudinaryUrl length', cloudinaryUrl.length);
 			console.log(
 				'---------------------------------------------------------------------------'
 			);
-			return cloudinaryUrl;
+			return cloudinaryUrls;
 		} catch (err) {
 			console.error(
 				'ERROR :: CLOUDINARY SERVICE / uploadImageFromUrl',
